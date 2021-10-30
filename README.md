@@ -44,6 +44,7 @@ Same as regular Minetest's controls, with some exceptions:
 |---|---|
 | `Use` a block | Tap Special key (default: E) |
 | While build-dragging: Lock along Y axis | Hold Special key (default: E) |
+| Undo last build | Tap Drop key (default: Q) |
 
 #### Resources
 
