@@ -1,0 +1,41 @@
+{
+  "version": "0.0.1",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "@types/jest": "^26.0.23",
+    "@types/node": "^15.12.4",
+    "cross-env": "^7.0.3",
+    "fs-extra": "^10.0.0",
+    "glob": "^7.1.6",
+    "jest": "^27.0.4",
+    "luamin": "^1.0.4",
+    "rimraf": "^3.0.2",
+    "tar": "^6.1.11",
+    "ts-jest": "^27.0.3",
+    "typescript": "^4.4",
+    "typescript-to-lua": "0.42.0",
+    "typescript-tstl-plugin": "^0.3.2"
+  },
+  "scripts": {
+    "clean": "rimraf build dist",
+    "build": "cross-env NODE_ENV=prod node build.js",
+    "build-dev": "cross-env NODE_ENV=dev node build.js",
+    "test": "jest"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "modulePaths": [
+      "node_modules",
+      "src"
+    ],
+    "globals": {
+      "ts-jest": {
+        "tsconfig": "tsconfig.test.json"
+      }
+    },
+    "setupFiles": [
+      "./src/tests/polyfill/tstl_polyfill.ts"
+    ]
+  }
+}

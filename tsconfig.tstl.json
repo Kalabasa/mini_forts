@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["typescript-to-lua/language-extensions"],
+    "plugins": [{ "name": "typescript-tstl-plugin" }],
+    "moduleResolution": "Node",
+    "outDir": "." // TSTL appends /build/
+  }
+}

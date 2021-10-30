@@ -1,0 +1,15 @@
+{
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.mjs"],
+  "compilerOptions": {
+    "target": "esnext",
+    "lib": ["ESNext"],
+    "baseUrl": "src",
+    "allowJs": true,
+    "strictNullChecks": true,
+    "noImplicitOverride": true,
+    "experimentalDecorators": true,
+    "jsx": "react",
+    "jsxFactory": "GUI.factory",
+    "jsxFragmentFactory": "GUI.fragmentFactory"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node", "jest", "typescript-to-lua/language-extensions"],
+    "esModuleInterop": true // warning go away
+  }
+}

@@ -1,0 +1,8 @@
+.vscode
+node_modules
+build
+dist
+release
+*.generated.js
+*.generated.ts
+yarn-error.log

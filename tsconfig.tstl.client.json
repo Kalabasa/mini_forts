@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.tstl.json",
+  "exclude": ["src/tests/**", "src/server/**"],
+  "tstl": {
+    "tstlVerbose": true,
+    "noHeader": true,
+    "noImplicitSelf": true,
+    "luaTarget": "5.1",
+    "luaBundleEntry": "src/client/init.ts",
+    "luaBundle": "build/client_bundle.lua"
+  }
+}

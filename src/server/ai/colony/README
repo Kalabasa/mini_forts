@@ -1,0 +1,25 @@
+Classes
+-------
+
+ColonyAI
+    Listens for world events and creates appropriate tasks.
+
+TaskManager
+    Distributes tasks to agents.
+
+Task
+    Self-contained instructions to achieve a specific goal.
+
+Agent
+    Receives instructions from the task assigned to it and executes the instructions on a world entity.
+
+
+
+Files
+-----
+
+register_colony_ai
+    Hooks up the ColonyAI with world events.
+
+task_helper
+    Reusable sets of instruction logic used by tasks.
