@@ -1,10 +1,16 @@
+![Defending](https://user-images.githubusercontent.com/3705081/139525275-db4eee61-e3c2-4df2-b79c-fce725f857af.gif)
+
+# MiniForts
+
 This is a game for [Minetest](https://www.minetest.net/).
 
 A game about building a fort and defending against invaders.
 
-This project is not finished.
+![Building](https://user-images.githubusercontent.com/3705081/139525342-9cb4e45f-d0f4-45ec-b0af-45cad252ad1e.gif)
 
-**Important:** Read how to play below because this game is not finished (no in-game tutorials).
+This project is not finished and development is paused.
+
+**Important:** Read how to play below because this game is not finished (There are no in-game tutorials).
 
 ## How to install
 
@@ -35,13 +41,17 @@ This project is not finished.
 
 #### Controls
 
-Same as regular Minetest's controls, with some exceptions:
+The controls are same as regular Minetest's controls, with some exceptions:
 
 * Some blocks can be `Use`d.
 * If you enabled the clientmod, building will use drag-n-drop gestures.
 
+![Drag-build](https://user-images.githubusercontent.com/3705081/139525349-ed2056d0-b6ff-430f-8c98-49edd53ffac9.gif)
+
 | Action | Key |
 |---|---|
+| Place build order / Cancel mine order | Build mouse button (default: Mouse2) |
+| Place dig order / Cancel build order | Dig mouse button (default: Mouse1) |
 | `Use` a block | Tap Special key (default: E) |
 | While build-dragging: Lock along Y axis | Hold Special key (default: E) |
 | Undo last build | Tap Drop key (default: Q) |
@@ -87,6 +97,10 @@ Resources can be extracted from blocks:
 6. **Ballista**
 
     Weapon. Minions can operate this to defend the fort. Uses Metal as ammunition.
+
+Player-built structures need support otherwise they will collapse.
+
+![Collapse](https://user-images.githubusercontent.com/3705081/139525369-922885fd-4bdf-44a3-ba93-cda6be97ff8d.gif)
 
 ## License
 
