@@ -10,6 +10,7 @@ const mycelialTexture = tex(woodPng, '^[sheet:3x1:1,0');
 const exMycelialTexture = tex(woodPng, '^[sheet:3x1:2,0');
 
 export class WoodProperties extends BlockProperties {
+  override health = 50;
   override digTime = 4;
 
   override physics = {
@@ -23,7 +24,7 @@ export class WoodProperties extends BlockProperties {
   };
   override miningResource = {
     type: ResourceType.Wood,
-    amount: 300,
+    amount: 2,
   };
 
   nodeDefinition = this.defineNodes({

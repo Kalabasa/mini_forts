@@ -1187,6 +1187,8 @@ declare global {
   export interface VoxelManip {
     get_data(buffer?: number[]): number[];
     set_data(data: number[]);
+    get_param2_data(buffer: number[]): number[];
+    set_param2_data(buffer: number[]);
     write_to_map(light?: boolean);
     get_emerged_area(): LuaMultiReturn<[Vector3D, Vector3D]>;
   }

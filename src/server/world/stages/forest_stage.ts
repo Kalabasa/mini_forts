@@ -9,7 +9,6 @@ import { FilterMap2D } from 'server/mapgen/filter_map';
 import { NoiseMap2D } from 'server/mapgen/noise_map';
 import { Stage, StageMapgenParams } from 'server/world/stage';
 import { throwError } from 'utils/error';
-import { Logger } from 'utils/logger';
 import { hypot, hypot2, lerp } from 'utils/math';
 import { Area, Volume } from 'utils/space';
 

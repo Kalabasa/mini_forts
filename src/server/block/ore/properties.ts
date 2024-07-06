@@ -11,6 +11,7 @@ const mycelialTexture = tex(orePng, '^[sheet:4x1:2,0');
 const exMycelialTexture = tex(orePng, '^[sheet:4x1:3,0');
 
 export class OreProperties extends BlockProperties {
+  override health = 60;
   override digTime = 6;
 
   override physics = {
@@ -19,11 +20,11 @@ export class OreProperties extends BlockProperties {
 
   override resource = {
     type: ResourceType.Stone,
-    amount: 10,
+    amount: 5,
   };
   override miningResource = {
     type: ResourceType.Metal,
-    amount: 200,
+    amount: 3,
   };
 
   nodeDefinition = this.defineNodes({

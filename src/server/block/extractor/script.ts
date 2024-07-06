@@ -59,19 +59,29 @@ export class ExtractorScript
           const groundPos = { x, y, z };
           const block = this.getMineableBlock(groundPos);
           if (block) {
-            amount += 1;
+            const ref =
+              this.context.blockManager.getRef<
+                BlockScript<MineableBlockProperties>
+              >(groundPos);
+            if (ref.getHealth() > 0) {
+              ref.damage(1);
+              amount += block.properties.miningResource.amount;
+            }
           }
         }
       }
 
-      this.context.addResource(
-        { type: this.resourceType, amount },
-        {
-          x: this.position.x,
-          y: this.position.y + 0.5,
-          z: this.position.z,
-        }
-      );
+      // todo: make harvestable for minions (keep minions busy so they don't just stand around, and make base design more cohesive)
+      if (amount > 0) {
+        this.context.addResource(
+          { type: this.resourceType, amount },
+          {
+            x: this.position.x,
+            y: this.position.y + 0.5,
+            z: this.position.z,
+          }
+        );
+      }
     }
 
     this.getTimer().start(mineInterval);

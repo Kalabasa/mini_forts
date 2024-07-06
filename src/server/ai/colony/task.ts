@@ -34,13 +34,13 @@ export abstract class Task {
 
   unassign(): void {
     if (this.agent) {
-      this.taskManager.unassignTask(this);
+      this.taskManager?.unassignTask(this);
     }
   }
 
   end(): void {
     if (!this._ended) {
-      this.taskManager.removeTask(this);
+      this.taskManager?.removeTask(this);
     }
     this._ended = true;
   }

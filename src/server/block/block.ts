@@ -141,7 +141,7 @@ export abstract class BlockProperties {
 
   /** Resource yielded when dug, and resource used to build */
   readonly resource?: Immutable<Resource>;
-  /** Resource yielded when mining */
+  /** Resource yielded per health point when mining */
   readonly miningResource?: Immutable<Resource>;
 
   readonly tags: BlockProperties.Tags = {};
@@ -281,6 +281,7 @@ export class BlockScript<P extends BlockProperties = BlockProperties>
   // Callback order
   // * Newly set node: constructor -> initializeNode -> activate
   // * Existing node: constructor -> activate
+  // Note: Mapgen doesn't use these callbacks. param2 is initialized separately!
   coreActivate(): void {
     this.activate();
   }
@@ -394,7 +395,7 @@ export class BlockScript<P extends BlockProperties = BlockProperties>
     if (!this._valid) throwError('BlockRef is no longer valid!');
   }
 
-  protected static healthToParam2(health: number): number {
+  static healthToParam2(health: number): number {
     // health is lossily compressed to param2
     // param2 [0,252] <-> health [0,500]
 
@@ -411,7 +412,7 @@ export class BlockScript<P extends BlockProperties = BlockProperties>
     return 128 + randomInt(low, high);
   }
 
-  protected static param2ToHealth(param2: number): number {
+  static param2ToHealth(param2: number): number {
     return param2 < 128 ? param2 : 128 + (param2 - 128) * 3;
   }
 

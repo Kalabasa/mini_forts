@@ -11,6 +11,8 @@ import { Volume } from 'utils/space';
 import { BiomeType, Stage, StageData } from 'server/world/stage';
 import { ForestStage } from 'server/world/stages/forest_stage';
 import { Barrier } from 'server/world/barrier';
+import { registeredBlocksByID } from 'server/register/register_blocks';
+import { BlockScript } from 'server/block/block';
 
 const biomeStageTypes = {
   [BiomeType.Forest]: ForestStage,
@@ -254,7 +256,15 @@ export class World {
       }
     }
 
+    const param2Data = data.map((nodeID) => {
+      const blockDef = registeredBlocksByID.get(nodeID);
+      return blockDef
+        ? BlockScript.healthToParam2(blockDef.properties.health)
+        : 0;
+    });
+
     vm.set_data(data);
+    vm.set_param2_data(param2Data);
     vm.write_to_map();
   }
 
