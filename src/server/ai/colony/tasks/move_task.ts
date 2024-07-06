@@ -1,0 +1,72 @@
+import { ActionResult } from "server/ai/colony/action_result";
+import { MinionAgent } from "server/ai/colony/minion_agent";
+import { Task } from "server/ai/colony/task";
+import { WorkerCapabilities } from "server/ai/colony/worker_capabilities";
+import { Locomotion } from "server/entity/locomotion/locomotion";
+import { Tasks } from "server/ai/colony/task_helper";
+import { Path } from "server/ai/pathfinder/path";
+
+const pathToDestination = Symbol();
+
+export class MoveTask extends Task {
+  constructor(
+    readonly destinations: Vector3D[],
+    readonly priorityCenter: Vector3D | undefined = undefined
+  ) {
+    super();
+  }
+
+  override isStrictlyImpossible(): boolean {
+    return this.destinations.every(
+      (p) =>
+        !Locomotion.passableNodeCost(WorkerCapabilities.locomotion.moveCost(p))
+    );
+  }
+
+  override estimateCost(agent: MinionAgent): number {
+    if (this.isStrictlyImpossible()) {
+      return Infinity;
+    }
+
+    const path = this.getPath(agent);
+    return path.estimateCost();
+  }
+
+  override execute(dt: number, agent: MinionAgent): ActionResult {
+    const path = this.getPath(agent);
+
+    if (!path.exists()) {
+      this.unassign();
+      return ActionResult.Stopped;
+    }
+
+    const moveResult = agent.followPath(path);
+
+    if (moveResult === ActionResult.Stopped) {
+      path.restart(agent.getVoxelPosition());
+      return agent.followPath(path);
+    }
+
+    if (moveResult === ActionResult.Impossible) {
+      this.end();
+    }
+
+    return moveResult;
+  }
+
+  getPath(agent: MinionAgent): Path {
+    return Tasks.remember(this, pathToDestination, () => {
+      const agentPos = agent.getVoxelPosition();
+      return this.priorityCenter
+        ? agent.pathfinder.findPriorityPath(
+            agentPos,
+            this.destinations.map((pos) => ({
+              pos,
+              // todo: normalize so nearest dest is 0
+              extraCost: 1 / (1 + vector.distance(agentPos, pos)),
+            }))
+          )
+        : agent.pathfinder.findAnyPath(agentPos, this.destinations);
+    });
+  }
+}

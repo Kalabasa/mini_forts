@@ -25,17 +25,12 @@ export class LeaveBuildSiteTask extends Task {
     throwError('Not implemented!');
   }
 
-  execute(dt: number, agent: MinionAgent): void {
-    if (!this.ensurePath(agent)) return;
+  override execute(dt: number, agent: MinionAgent): ActionResult {
+    if (!this.ensurePath(agent)) return ActionResult.Impossible;
 
     const path = this.memory[escapePathMemKey];
 
-    const pathResult = Tasks.fulfillPath(this, agent, path);
-    if (!this.isActive()) return;
-
-    if (pathResult !== ActionResult.Ongoing) {
-      this.end();
-    }
+    return Tasks.fulfillPath(this, agent, path);
   }
 
   private ensurePath(agent: MinionAgent): boolean {

@@ -1,51 +1,28 @@
-import { ActionResult } from 'server/ai/colony/action_result';
-import { Task } from 'server/ai/colony/task';
-import { Tasks } from 'server/ai/colony/task_helper';
-import { Logger } from 'utils/logger';
-import { Locomotion } from 'server/entity/locomotion/locomotion';
-import { Operable } from 'server/ai/colony/operable';
-import { WorkerCapabilities } from 'server/ai/colony/worker_capabilities';
-import { MinionAgent } from 'server/ai/colony/minion_agent';
+import { ActionResult } from "server/ai/colony/action_result";
+import { MinionAgent } from "server/ai/colony/minion_agent";
+import { Operable } from "server/ai/colony/operable";
+import { MoveTask } from "server/ai/colony/tasks/move_task";
+import { WorkerCapabilities } from "server/ai/colony/worker_capabilities";
+import { Logger } from "utils/logger";
 
-export class OperateTask extends Task {
+export class OperateTask extends MoveTask {
   readonly position: Vector3D;
 
   constructor(readonly operable: Operable) {
-    super();
+    super(WorkerCapabilities.getOperatePositions(operable.position));
     this.position = operable.position;
   }
 
-  getDestinations(): Vector3D[] {
-    return WorkerCapabilities.getOperatePositions(this.position);
-  }
-
-  isStrictlyImpossible(): boolean {
+  override isStrictlyImpossible(): boolean {
     // todo: Check ammo for weapon
-
-    return WorkerCapabilities.getOperatePositions(this.position).every(
-      (p) =>
-        !Locomotion.passableNodeCost(WorkerCapabilities.locomotion.moveCost(p))
-    );
+    return super.isStrictlyImpossible();
   }
 
-  estimateCost(agent: MinionAgent): number {
-    const path = agent.pathfinder.findAnyPath(
-      agent.getVoxelPosition(),
-      this.getDestinations()
-    );
-    return path.estimateCost();
-  }
+  override execute(dt: number, agent: MinionAgent): ActionResult {
+    const moveResult = super.execute(dt, agent);
+    if (moveResult !== ActionResult.Done) return moveResult;
 
-  execute(dt: number, agent: MinionAgent): void {
-    const path = Tasks.ensureValidPath(this, agent);
-    if (!this.isActive()) return;
-
-    const pathResult = Tasks.fulfillPath(this, agent, path);
-    if (!this.isActive()) return;
-
-    if (pathResult === ActionResult.Done) {
-      Tasks.concludeOnAction(this, agent.operateOperable(this.operable));
-    }
+    return agent.operateOperable(this.operable);
   }
 
   [Logger.Props]() {

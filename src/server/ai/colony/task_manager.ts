@@ -316,12 +316,12 @@ export class TaskManager {
     }
 
     Logger.trace('TaskManager: Task matrix');
-    const blank = { [Logger.String]: () => '_' };
+    const infinite = { [Logger.String]: () => '∞' };
     for (let j = 0; j < tasksLen; j++) {
       const row: any[] = [];
       for (let i = 0; i < agentsLen; i++) {
         const score = this.buffer[i + j * stride];
-        row.push(Number.isFinite(score) ? score : blank);
+        row.push(Number.isFinite(score) ? score : infinite);
       }
       Logger.trace('  ', row);
     }

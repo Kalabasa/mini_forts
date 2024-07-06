@@ -1,26 +1,31 @@
-import { ActionResult } from 'server/ai/colony/action_result';
-import { Task } from 'server/ai/colony/task';
-import { NoopPath, Path } from 'server/ai/pathfinder/path';
-import { MinionAgent } from 'server/ai/colony/minion_agent';
+import { ActionResult } from "server/ai/colony/action_result";
+import { Task } from "server/ai/colony/task";
+import { NoopPath, Path } from "server/ai/pathfinder/path";
+import { MinionAgent } from "server/ai/colony/minion_agent";
 
-type WithPosition = {
+type WithDestination = {
   readonly position: Vector3D;
-  getDestinations(): Vector3D[];
+  readonly destinations: Vector3D[];
 };
 
 // This could be a mixin
 export const Tasks = {
-  expectNode(task: Task & WithPosition, name: string): void {
+  remember<T>(task: Task, key: string | symbol, supplier: () => T): T {
+    const memory = task.memory as object;
+
+    if (key in memory) return memory[key];
+
+    const value = supplier();
+    memory[key] = value;
+    return value;
+  },
+
+  expectNode(task: Task & WithDestination, name: string): ActionResult {
     const node = getNodeAtPosition(task);
-    if (node.name !== name) task.end();
+    return node.name === name ? ActionResult.Done : ActionResult.Impossible;
   },
 
-  concludeOnAction(task: Task, actionResult: ActionResult): void {
-    if (actionResult === ActionResult.Done) task.end();
-    if (actionResult === ActionResult.Stopped) task.unassign();
-    if (actionResult === ActionResult.Impossible) task.end();
-  },
-
+  /** @deprecated inherit MoveTask */
   fulfillPath(task: Task, agent: MinionAgent, path: Path): ActionResult {
     const moveResult = agent.followPath(path);
 
@@ -36,18 +41,8 @@ export const Tasks = {
     return moveResult;
   },
 
-  ensureValidPath(task: Task & WithPosition, agent: MinionAgent): Path {
-    const path = getPath(task, agent);
-
-    if (!path.exists()) {
-      task.unassign();
-      return new NoopPath();
-    }
-
-    return path;
-  },
-
-  getPath(task: Task & WithPosition, agent: MinionAgent): Path {
+  /** @deprecated inherit MoveTask */
+  getPath(task: Task & WithDestination, agent: MinionAgent): Path {
     return getPath(task, agent);
   },
 };
@@ -60,15 +55,15 @@ type Memory = {
   [pathToDestination]: Path;
 };
 
-function getNodeAtPosition(task: Task & WithPosition) {
+function getNodeAtPosition(task: Task & WithDestination) {
   return compute(task, nodeAtPosition, () => minetest.get_node(task.position));
 }
 
-function getPath(task: Task & WithPosition, agent: MinionAgent) {
+function getPath(task: Task & WithDestination, agent: MinionAgent) {
   return compute(task, pathToDestination, () => {
     return agent.pathfinder.findAnyPath(
       agent.getVoxelPosition(),
-      task.getDestinations()
+      task.destinations
     );
   });
 }

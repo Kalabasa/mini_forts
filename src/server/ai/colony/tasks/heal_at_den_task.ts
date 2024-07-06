@@ -1,42 +1,20 @@
-import { ActionResult } from 'server/ai/colony/action_result';
-import { Task } from 'server/ai/colony/task';
-import { Tasks } from 'server/ai/colony/task_helper';
-import { Logger } from 'utils/logger';
-import { MinionAgent } from 'server/ai/colony/minion_agent';
+import { ActionResult } from "server/ai/colony/action_result";
+import { MinionAgent } from "server/ai/colony/minion_agent";
+import { MoveTask } from "server/ai/colony/tasks/move_task";
+import { Logger } from "utils/logger";
 
-export class HealAtDenTask extends Task {
+export class HealAtDenTask extends MoveTask {
   constructor(readonly position: Vector3D) {
-    super();
+    super([position]);
   }
 
-  getDestinations(): Vector3D[] {
-    return [this.position];
-  }
+  override execute(dt: number, agent: MinionAgent): ActionResult {
+    const moveResult = super.execute(dt, agent);
+    if (moveResult !== ActionResult.Done) return moveResult;
 
-  isStrictlyImpossible(): boolean {
-    return false;
-  }
-
-  estimateCost(agent: MinionAgent): number {
-    const path = agent.pathfinder.findAnyPath(
-      agent.getVoxelPosition(),
-      this.getDestinations()
-    );
-    return path.estimateCost();
-  }
-
-  execute(dt: number, agent: MinionAgent): void {
-    const path = Tasks.ensureValidPath(this, agent);
-    if (!this.isActive()) return;
-
-    const pathResult = Tasks.fulfillPath(this, agent, path);
-    if (!this.isActive()) return;
-
-    if (pathResult === ActionResult.Done) {
-      if (agent.getHealth() >= agent.getMaxHealth()) {
-        this.end();
-      }
-    }
+    return agent.getHealth() < agent.getMaxHealth()
+      ? ActionResult.Ongoing
+      : ActionResult.Done;
   }
 
   [Logger.Props]() {

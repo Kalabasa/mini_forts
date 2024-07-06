@@ -1,45 +1,19 @@
-import { ActionResult } from 'server/ai/colony/action_result';
-import { Task } from 'server/ai/colony/task';
-import { Tasks } from 'server/ai/colony/task_helper';
-import { WorkerCapabilities } from 'server/ai/colony/worker_capabilities';
-import { Locomotion } from 'server/entity/locomotion/locomotion';
-import { Logger } from 'utils/logger';
-import { MinionAgent } from 'server/ai/colony/minion_agent';
+import { ActionResult } from "server/ai/colony/action_result";
+import { MinionAgent } from "server/ai/colony/minion_agent";
+import { MoveTask } from "server/ai/colony/tasks/move_task";
+import { WorkerCapabilities } from "server/ai/colony/worker_capabilities";
+import { Logger } from "utils/logger";
 
-export class DigTask extends Task {
+export class DigTask extends MoveTask {
   constructor(readonly position: Vector3D) {
-    super();
+    super(WorkerCapabilities.getWorkPositions(position));
   }
 
-  getDestinations(): Vector3D[] {
-    return WorkerCapabilities.getWorkPositions(this.position);
-  }
+  override execute(dt: number, agent: MinionAgent): ActionResult {
+    const moveResult = super.execute(dt, agent);
+    if (moveResult !== ActionResult.Done) return moveResult;
 
-  isStrictlyImpossible(): boolean {
-    return WorkerCapabilities.getWorkPositions(this.position).every(
-      (p) =>
-        !Locomotion.passableNodeCost(WorkerCapabilities.locomotion.moveCost(p))
-    );
-  }
-
-  estimateCost(agent: MinionAgent): number {
-    const path = agent.pathfinder.findAnyPath(
-      agent.getVoxelPosition(),
-      this.getDestinations()
-    );
-    return path.estimateCost();
-  }
-
-  execute(dt: number, agent: MinionAgent): void {
-    const path = Tasks.ensureValidPath(this, agent);
-    if (!this.isActive()) return;
-
-    const pathResult = Tasks.fulfillPath(this, agent, path);
-    if (!this.isActive()) return;
-
-    if (pathResult === ActionResult.Done) {
-      Tasks.concludeOnAction(this, agent.workDiggable(this.position));
-    }
+    return agent.workDiggable(this.position);
   }
 
   [Logger.Props]() {

@@ -55,7 +55,12 @@ export class MinionAgent {
     }
 
     if (this.task) {
-      this.task.execute(dt, this);
+      const taskResult = this.task.execute(dt, this);
+      if (this.task) {
+        if (taskResult === ActionResult.Done) this.task.end();
+        if (taskResult === ActionResult.Stopped) this.task.unassign();
+        if (taskResult === ActionResult.Impossible) this.task.end();
+      }
     } else if (this.minion.action.type !== MinionAction.Move) {
       this.minion.endAction();
     }

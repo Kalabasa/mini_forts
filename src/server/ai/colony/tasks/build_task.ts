@@ -1,60 +1,34 @@
 import { ActionResult } from 'server/ai/colony/action_result';
-import { Task } from 'server/ai/colony/task';
 import { Tasks } from 'server/ai/colony/task_helper';
 import { BlockDefinition } from 'server/block/block';
 import { Logger } from 'utils/logger';
-import { Locomotion } from 'server/entity/locomotion/locomotion';
 import { BlockPhysics } from 'common/block/physics';
 import { WorkerCapabilities } from 'server/ai/colony/worker_capabilities';
 import { MinionAgent } from 'server/ai/colony/minion_agent';
+import { MoveTask } from 'server/ai/colony/tasks/move_task';
 
-export class BuildTask extends Task {
+export class BuildTask extends MoveTask {
   constructor(
     readonly position: Vector3D,
     readonly block: BlockDefinition.WithGhost
   ) {
-    super();
+    super(WorkerCapabilities.getWorkPositions(position));
   }
 
-  getDestinations(): Vector3D[] {
-    return WorkerCapabilities.getWorkPositions(this.position);
-  }
-
-  isStrictlyImpossible(): boolean {
+  override isStrictlyImpossible(): boolean {
     if (!this.context.hasResource(this.block.properties.resource)) return true;
     if (!BlockPhysics.canSupport(this.block, this.position)) return true;
-
-    return WorkerCapabilities.getWorkPositions(this.position).every(
-      (p) =>
-        !Locomotion.passableNodeCost(WorkerCapabilities.locomotion.moveCost(p))
-    );
+    return super.isStrictlyImpossible();
   }
 
-  estimateCost(agent: MinionAgent): number {
-    if (this.isStrictlyImpossible()) {
-      return Infinity;
-    }
+  override execute(dt: number, agent: MinionAgent): ActionResult {
+    const expectResult = Tasks.expectNode(this, this.block.registry.ghost.name);
+    if (expectResult !== ActionResult.Done) return expectResult;
 
-    const path = agent.pathfinder.findAnyPath(
-      agent.getVoxelPosition(),
-      this.getDestinations()
-    );
-    return path.estimateCost();
-  }
+    const moveResult = super.execute(dt, agent);
+    if (moveResult !== ActionResult.Done) return moveResult;
 
-  execute(dt: number, agent: MinionAgent): void {
-    Tasks.expectNode(this, this.block.registry.ghost.name);
-    if (!this.isActive()) return;
-
-    const path = Tasks.ensureValidPath(this, agent);
-    if (!this.isActive()) return;
-
-    const pathResult = Tasks.fulfillPath(this, agent, path);
-    if (!this.isActive()) return;
-
-    if (pathResult === ActionResult.Done) {
-      Tasks.concludeOnAction(this, agent.workBuildable(this.position));
-    }
+    return agent.workBuildable(this.position);
   }
 
   [Logger.Props]() {

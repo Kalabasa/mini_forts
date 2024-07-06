@@ -1,6 +1,7 @@
 import { TaskManager } from 'server/ai/colony/task_manager';
 import { ReadonlyGameContext } from 'server/game/context';
 import { MinionAgent } from 'server/ai/colony/minion_agent';
+import { ActionResult } from './action_result';
 
 export enum TaskPriority {
   Low = 0,
@@ -19,7 +20,7 @@ export abstract class Task {
   private _context: ReadonlyGameContext;
   private taskManager: TaskManager;
 
-  abstract execute(dt: number, agent: MinionAgent): void;
+  abstract execute(dt: number, agent: MinionAgent): ActionResult;
   abstract isStrictlyImpossible(): boolean;
   abstract estimateCost(agent: MinionAgent): number;
 
