@@ -1,36 +1,57 @@
-import { Profiling } from 'common/debug/profiling';
-import { NavComponent, NavMap } from 'server/ai/pathfinder/nav_map';
-import { DebugMarker } from 'server/debug/debug_marker';
-import { CONFIG } from 'utils/config';
-import { Logger } from 'utils/logger';
-import { equalVectors, lerpVector, randomInt, ZERO_V } from 'utils/math';
-import { WeakRef } from 'utils/weak_ref';
+import { Profiling } from "common/debug/profiling";
+import { NavComponent, NavMap } from "server/ai/pathfinder/nav_map";
+import { DebugMarker } from "server/debug/debug_marker";
+import { CONFIG } from "utils/config";
+import { Logger } from "utils/logger";
+import { ZERO_V, lerpVector, randomInt } from "utils/math";
+import { IntervalTimer } from "utils/timer";
+import { WeakRef } from "utils/weak_ref";
 
 if (CONFIG.isDev) {
-  minetest.register_chatcommand('debug_navmap', {
-    params: '<name>',
+  minetest.register_chatcommand("debug_navmap", {
+    params: "<name>",
     func: (playerName, param) => {
       const playerObj = minetest.get_player_by_name(playerName);
 
-      if (!playerObj) return $multi(false, 'No player');
+      if (!playerObj) return $multi(false, "No player");
 
       const name = param.trim();
 
-      if (name.length === 0) return $multi(false, 'Missing name parameter');
-
-      const ref = instances.get(name);
-      const instance = ref?.deref();
-
-      if (!instance) {
-        instances.delete(name);
-        return $multi(false, `No DebugNavMap instance for name: '${name}'`);
+      if (name.length === 0) {
+        const names = ["off", ...instances.keys()].join(", ");
+        return $multi(
+          false,
+          `Missing name parameter. Expected one of: ${names}`
+        );
       }
 
-      const playerPos = playerObj.get_pos();
-      instance.debug(playerPos);
+      for (const instance of instances.values()) {
+        instance.deref()?.setActiveFor(null);
+      }
+
+      if (name !== "off") {
+        const ref = instances.get(name);
+        const instance = ref?.deref();
+
+        if (!instance) {
+          instances.delete(name);
+          return $multi(false, `No DebugNavMap instance for name: '${name}'`);
+        }
+
+        instance.setActiveFor(playerObj);
+      }
 
       return $multi(true);
     },
+  });
+
+  const timer = new IntervalTimer(1.0);
+
+  minetest.register_globalstep((dt) => {
+    if (!timer.updateAndCheck(dt)) return;
+    for (const instance of instances.values()) {
+      instance.deref()?.debug(timer.seconds);
+    }
   });
 }
 
@@ -47,40 +68,52 @@ export class DebugNavMap extends NavMap {
     return instance;
   }
 
+  private activeFor: PlayerObject | null = null;
+
   private constructor(...params: ConstructorParameters<typeof NavMap>) {
     super(...params);
   }
 
-  override invalidateRegion(...args: Parameters<NavMap['invalidateRegion']>) {
-    Profiling.startTimer('invalidateRegion');
+  override invalidateRegion(...args: Parameters<NavMap["invalidateRegion"]>) {
+    Profiling.startTimer("invalidateRegion");
     const result = super.invalidateRegion(...args);
-    Profiling.endTimer('invalidateRegion');
+    Profiling.endTimer("invalidateRegion");
     return result;
   }
 
-  override populatePartitions(...args: Parameters<NavMap['populatePartitions']>) {
-    Profiling.startTimer('populatePartitions');
+  override populatePartitions(
+    ...args: Parameters<NavMap["populatePartitions"]>
+  ) {
+    Profiling.startTimer("populatePartitions");
     const result = super.populatePartitions(...args);
-    Profiling.endTimer('populatePartitions');
+    Profiling.endTimer("populatePartitions");
     return result;
   }
 
-  debug(position: Vector3D) {
-    const cell = this.getCellByVoxel(position)!;
+  setActiveFor(value: PlayerObject | null) {
+    this.activeFor = value;
+  }
+
+  debug(duration: number) {
+    if (!this.activeFor) return;
+
+    const cell = this.getCellByVoxel(this.activeFor.get_pos())!;
+    const cellPos = cell.getCellPos();
 
     DebugMarker.mark(lerpVector(cell.volume.min, cell.volume.max, 0.5), {
       type: DebugMarker.Volume.White,
-      duration: 60,
+      duration,
       size: cell.volume.getExtent(),
     });
 
     const debugMarkerTypes = Object.values(DebugMarker.Point).filter(
       (t) => t !== DebugMarker.Point.White
     );
-    let debugMarkerIndex = randomInt(0, debugMarkerTypes.length - 1);
+    let debugMarkerIndex =
+      (cellPos.x + cellPos.y * 2 + cellPos.z * 3) % debugMarkerTypes.length;
     const assignedMarkerType = new Map<
       number,
-      typeof debugMarkerTypes[number]
+      (typeof debugMarkerTypes)[number]
     >();
 
     const compInfo = new Map<
@@ -124,7 +157,7 @@ export class DebugNavMap extends NavMap {
         DebugMarker.mark(point, {
           type,
           size: { x: 0.17, y: 0.17, z: 0.17 },
-          duration: 60,
+          duration,
         });
       }
 
@@ -138,7 +171,7 @@ export class DebugNavMap extends NavMap {
           type,
           size: ZERO_V,
           nametag: `id=${id} part=${info.comp.partition}`,
-          duration: 60,
+          duration,
         }
       );
     }
@@ -167,7 +200,7 @@ export class DebugNavMap extends NavMap {
               );
               if (nextComponents.length > 0) {
                 const nametag =
-                  id + '->' + nextComponents.map((c) => c.id).join(',');
+                  id + "->" + nextComponents.map((c) => c.id).join(",");
 
                 const pos = {
                   x:
@@ -185,7 +218,7 @@ export class DebugNavMap extends NavMap {
                   type: DebugMarker.Point.White,
                   size: ZERO_V,
                   nametag,
-                  duration: 60,
+                  duration,
                 });
               }
             }
@@ -196,6 +229,6 @@ export class DebugNavMap extends NavMap {
       Logger.error(e);
     }
 
-    Logger.trace('debug_navmap:', cell.volume);
+    Logger.trace("debug_navmap:", cell.volume);
   }
 }

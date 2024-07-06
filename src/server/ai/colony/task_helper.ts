@@ -1,7 +1,7 @@
 import { ActionResult } from 'server/ai/colony/action_result';
-import { Agent } from 'server/ai/colony/agent';
 import { Task } from 'server/ai/colony/task';
 import { NoopPath, Path } from 'server/ai/pathfinder/path';
+import { MinionAgent } from 'server/ai/colony/minion_agent';
 
 type WithPosition = {
   readonly position: Vector3D;
@@ -21,7 +21,7 @@ export const Tasks = {
     if (actionResult === ActionResult.Impossible) task.end();
   },
 
-  fulfillPath(task: Task, agent: Agent, path: Path): ActionResult {
+  fulfillPath(task: Task, agent: MinionAgent, path: Path): ActionResult {
     const moveResult = agent.followPath(path);
 
     if (moveResult === ActionResult.Stopped) {
@@ -36,7 +36,7 @@ export const Tasks = {
     return moveResult;
   },
 
-  ensureValidPath(task: Task & WithPosition, agent: Agent): Path {
+  ensureValidPath(task: Task & WithPosition, agent: MinionAgent): Path {
     const path = getPath(task, agent);
 
     if (!path.exists()) {
@@ -47,7 +47,7 @@ export const Tasks = {
     return path;
   },
 
-  getPath(task: Task & WithPosition, agent: Agent): Path {
+  getPath(task: Task & WithPosition, agent: MinionAgent): Path {
     return getPath(task, agent);
   },
 };
@@ -64,7 +64,7 @@ function getNodeAtPosition(task: Task & WithPosition) {
   return compute(task, nodeAtPosition, () => minetest.get_node(task.position));
 }
 
-function getPath(task: Task & WithPosition, agent: Agent) {
+function getPath(task: Task & WithPosition, agent: MinionAgent) {
   return compute(task, pathToDestination, () => {
     return agent.pathfinder.findAnyPath(
       agent.getVoxelPosition(),

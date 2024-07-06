@@ -1,5 +1,4 @@
 import { IsNode } from 'common/block/is_node';
-import { Agent } from 'server/ai/colony/agent';
 import { DebugTaskManager } from 'server/ai/colony/debug_task_manager';
 import { Operable } from 'server/ai/colony/operable';
 import { TaskPriority } from 'server/ai/colony/task';
@@ -21,6 +20,7 @@ import { ID } from 'utils/id';
 import { Logger } from 'utils/logger';
 import { equalVectors } from 'utils/math';
 import { IntervalTimer } from 'utils/timer';
+import { MinionAgent } from 'server/ai/colony/minion_agent';
 
 export class ColonyAI {
   private readonly contextDelegate = new ReadonlyGameContextDelegate();
@@ -28,7 +28,7 @@ export class ColonyAI {
     this.contextDelegate.asContext()
   );
 
-  private readonly agents = new Map<ID, Agent>();
+  private readonly agents = new Map<ID, MinionAgent>();
   private readonly enemies = new Map<ID, EnemyEntity>();
 
   private readonly dens = new Map<string, Vector3D>();
@@ -75,12 +75,12 @@ export class ColonyAI {
     }
   }
 
-  private updateAgent(agent: Agent, dt: number) {
+  private updateAgent(agent: MinionAgent, dt: number) {
     this.tryHeal(agent);
-    agent.coreUpdate(dt);
+    agent.update(dt);
   }
 
-  private tryHeal(agent: Agent) {
+  private tryHeal(agent: MinionAgent) {
     const health = agent.getHealth();
     const maxHealth = agent.getMaxHealth();
 
@@ -115,7 +115,7 @@ export class ColonyAI {
     this.taskManager.assign(agent, task);
   }
 
-  private getHealAtDenTask(agent: Agent): HealAtDenTask | undefined {
+  private getHealAtDenTask(agent: MinionAgent): HealAtDenTask | undefined {
     let best: HealAtDenTask | undefined;
     let bestCost: number = Infinity;
     for (const [key, pos] of this.dens.entries()) {
@@ -183,7 +183,7 @@ export class ColonyAI {
     this.removeOperateTask(posKey(operable.position));
   }
 
-  addAgent(id: ID, agent: Agent): void {
+  addAgent(id: ID, agent: MinionAgent): void {
     if (CONFIG.isDev) {
       if (this.agents.has(id)) {
         throwError('Duplicate ID!', id, agent);

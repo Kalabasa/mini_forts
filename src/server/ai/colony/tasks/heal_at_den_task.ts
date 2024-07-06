@@ -1,8 +1,8 @@
 import { ActionResult } from 'server/ai/colony/action_result';
-import { Agent } from 'server/ai/colony/agent';
 import { Task } from 'server/ai/colony/task';
 import { Tasks } from 'server/ai/colony/task_helper';
 import { Logger } from 'utils/logger';
+import { MinionAgent } from 'server/ai/colony/minion_agent';
 
 export class HealAtDenTask extends Task {
   constructor(readonly position: Vector3D) {
@@ -17,7 +17,7 @@ export class HealAtDenTask extends Task {
     return false;
   }
 
-  estimateCost(agent: Agent): number {
+  estimateCost(agent: MinionAgent): number {
     const path = agent.pathfinder.findAnyPath(
       agent.getVoxelPosition(),
       this.getDestinations()
@@ -25,7 +25,7 @@ export class HealAtDenTask extends Task {
     return path.estimateCost();
   }
 
-  execute(dt: number, agent: Agent): void {
+  execute(dt: number, agent: MinionAgent): void {
     const path = Tasks.ensureValidPath(this, agent);
     if (!this.isActive()) return;
 

@@ -1,22 +1,22 @@
-import { Agent } from 'server/ai/colony/agent';
 import { Task, TaskPriority } from 'server/ai/colony/task';
 import { ReadonlyGameContext } from 'server/game/context';
 import { throwError } from 'utils/error';
 import { Logger } from 'utils/logger';
 import { IntervalTimer } from 'utils/timer';
+import { MinionAgent } from 'server/ai/colony/minion_agent';
 
 // In order of priority
 const priorities = [TaskPriority.High, TaskPriority.Medium, TaskPriority.Low];
 const buildupLimit = 20;
 
 type ManagedAgent = {
-  -readonly [K in keyof Agent]: Agent[K] extends Task | undefined
+  -readonly [K in keyof MinionAgent]: MinionAgent[K] extends Task | undefined
     ? ManagedTask | undefined
-    : Agent[K];
+    : MinionAgent[K];
 };
 
 type ManagedTask = {
-  -readonly [K in keyof Task]: Task[K] extends Agent | undefined
+  -readonly [K in keyof Task]: Task[K] extends MinionAgent | undefined
     ? ManagedAgent | undefined
     : Task[K];
 };
@@ -239,7 +239,7 @@ export class TaskManager {
       for (let i = 0; i < agentsLen; i++) {
         const agent = agents[i];
 
-        const cost = task.estimateCost(agent as Agent);
+        const cost = task.estimateCost(agent as MinionAgent);
 
         // place costs in the matrix
         const index = i + j * stride;

@@ -1,11 +1,11 @@
 import { Locomotion } from 'server/entity/locomotion/locomotion';
 import { createArray } from 'utils/array';
-import { throwError } from 'utils/error';
 import { Logger } from 'utils/logger';
 import { equalVectors, floorDiv, vectorFloorDiv } from 'utils/math';
 import { Queue } from 'utils/queue';
 import { Volume } from 'utils/space';
 
+// a cell is a grid cell, an 8x8x8 part of the world, arranged in a 3D grid
 const cellSize = 8;
 
 type ComponentID = number;
@@ -16,7 +16,7 @@ export type NavComponent = {
   cell: NavCell;
   id: number;
   sample: Vector3D;
-  // partition is a global number indicating components that are reachable from each other within the world
+  // partition is a global number indicating components that are reachable from each other across the whole world; i.e. the whole world is partitioned into 'partitions'
   // `undefined` if not determined yet
   partition: number | undefined;
   links: Record<Direction, ComponentLink>;

@@ -1,6 +1,6 @@
-import { Agent } from 'server/ai/colony/agent';
 import { TaskManager } from 'server/ai/colony/task_manager';
 import { ReadonlyGameContext } from 'server/game/context';
+import { MinionAgent } from 'server/ai/colony/minion_agent';
 
 export enum TaskPriority {
   Low = 0,
@@ -11,7 +11,7 @@ export enum TaskPriority {
 export abstract class Task {
   readonly memory: object = {};
   readonly priority: TaskPriority;
-  readonly agent: Agent | undefined;
+  readonly agent: MinionAgent | undefined;
 
   readonly reassignable: boolean = true;
 
@@ -19,9 +19,9 @@ export abstract class Task {
   private _context: ReadonlyGameContext;
   private taskManager: TaskManager;
 
-  abstract execute(dt: number, agent: Agent): void;
+  abstract execute(dt: number, agent: MinionAgent): void;
   abstract isStrictlyImpossible(): boolean;
-  abstract estimateCost(agent: Agent): number;
+  abstract estimateCost(agent: MinionAgent): number;
 
   get context(): ReadonlyGameContext {
     return this._context;

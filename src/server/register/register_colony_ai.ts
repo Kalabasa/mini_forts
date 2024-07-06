@@ -1,5 +1,5 @@
 import { Meta } from 'common/meta';
-import { MinionAgent } from 'server/ai/colony/agents/minion_agent';
+import { MinionAgent } from 'server/ai/colony/minion_agent';
 import { ColonyAI } from 'server/ai/colony/colony_ai';
 import { BallistaOperable } from 'server/ai/colony/operables/ballista_operable';
 import { BallistaDef } from 'server/block/ballista/def';

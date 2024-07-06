@@ -43,6 +43,19 @@ export function vectorFloorDiv(v: Vector3D, d: number): Vector3D {
   };
 }
 
+export function vectorAverage(vectors: Vector3D[]): Vector3D {
+  const average = vector.new(0, 0, 0);
+  for (const dst of vectors) {
+    average.x += dst.x;
+    average.y += dst.y;
+    average.z += dst.z;
+  }
+  average.x /= vectors.length;
+  average.y /= vectors.length;
+  average.z /= vectors.length;
+  return average;
+}
+
 export function equalVectors(a: Vector3D, b: Vector3D): boolean {
   return a && b && a.x === b.x && a.y === b.y && a.z === b.z;
 }

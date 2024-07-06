@@ -1,12 +1,12 @@
 import { IsNode } from 'common/block/is_node';
 import { ActionResult } from 'server/ai/colony/action_result';
-import { Agent } from 'server/ai/colony/agent';
 import { Task } from 'server/ai/colony/task';
 import { Tasks } from 'server/ai/colony/task_helper';
 import { Locomotion } from 'server/entity/locomotion/locomotion';
 import { throwError } from 'utils/error';
 import { Logger } from 'utils/logger';
 import { Queue } from 'utils/queue';
+import { MinionAgent } from 'server/ai/colony/minion_agent';
 
 const escapePathMemKey = Symbol();
 
@@ -25,7 +25,7 @@ export class LeaveBuildSiteTask extends Task {
     throwError('Not implemented!');
   }
 
-  execute(dt: number, agent: Agent): void {
+  execute(dt: number, agent: MinionAgent): void {
     if (!this.ensurePath(agent)) return;
 
     const path = this.memory[escapePathMemKey];
@@ -38,7 +38,7 @@ export class LeaveBuildSiteTask extends Task {
     }
   }
 
-  private ensurePath(agent: Agent): boolean {
+  private ensurePath(agent: MinionAgent): boolean {
     const agentPos = agent.getVoxelPosition();
 
     let path = this.memory[escapePathMemKey];

@@ -1,9 +1,9 @@
-import { NavComponent, NavMap } from 'server/ai/pathfinder/nav_map';
-import { Locomotion } from 'server/entity/locomotion/locomotion';
-import { throwError } from 'utils/error';
-import { Logger } from 'utils/logger';
-import { equalVectors, lerpVector, sqDist } from 'utils/math';
-import { PriorityQueue } from 'utils/priority_queue';
+import { NavComponent, NavMap } from "server/ai/pathfinder/nav_map";
+import { Locomotion } from "server/entity/locomotion/locomotion";
+import { throwError } from "utils/error";
+import { Logger } from "utils/logger";
+import { equalVectors, lerpVector, sqDist } from "utils/math";
+import { PriorityQueue } from "utils/priority_queue";
 
 export type PathNode = {
   position: Vector3D;
@@ -18,6 +18,11 @@ export type CoarsePathNode = {
   to: CoarsePathNode | undefined;
   costToDestination: number;
   value: number;
+};
+
+export type Destination = {
+  pos: Vector3D;
+  extraCost: number;
 };
 
 export interface Path {
@@ -57,7 +62,7 @@ export class FindPath implements Path {
 
   constructor(
     protected source: Vector3D,
-    protected destinations: Vector3D[],
+    protected destinations: Destination[],
     readonly locomotion: Locomotion,
     readonly navMap: NavMap
   ) {}
@@ -71,7 +76,7 @@ export class FindPath implements Path {
       if (srcComp) {
         let reachable: boolean | undefined;
         for (const dst of this.destinations) {
-          const dstComp = this.navMap.findComponent(dst);
+          const dstComp = this.navMap.findComponent(dst.pos);
           if (dstComp && dstComp.partition && srcComp.partition) {
             reachable = dstComp.partition === srcComp.partition;
             if (reachable) break;
@@ -96,7 +101,7 @@ export class FindPath implements Path {
 
     let cost = Infinity;
     for (const dst of this.destinations) {
-      let c = sqDist(this.source, dst);
+      let c = sqDist(this.source, dst.pos);
       if (c < cost) {
         cost = c;
       }
@@ -172,7 +177,7 @@ export class FindPath implements Path {
       );
       this.partialPathIndex = 0;
     } else {
-      throwError('Pathfinder: No more steps!');
+      throwError("Pathfinder: No more steps!");
     }
   }
 
@@ -200,30 +205,27 @@ export class FindPath implements Path {
     this.computed = true;
   }
 
-  protected searchCoarsePath(source: Vector3D, destinations: Vector3D[]) {
+  protected searchCoarsePath(source: Vector3D, destinations: Destination[]) {
     if (destinations.length === 0) {
-      throwError('Pathfinder: Empty destinations array!');
+      throwError("Pathfinder: Empty destinations array!");
     }
 
     const srcComp = this.navMap.findComponent(source);
     if (!srcComp) return undefined;
 
-    if (!srcComp.partition) {
+    if (srcComp.partition == null) {
       this.navMap.populatePartitions(source);
     }
 
-    const dstComps: NavComponent[] = [];
+    const dstComps: { comp: NavComponent; initCost: number }[] = [];
     for (const dst of destinations) {
-      const dstComp = this.navMap.findComponent(dst);
+      const dstComp = this.navMap.findComponent(dst.pos);
       if (dstComp) {
-        if (!dstComp.partition) {
-          this.navMap.populatePartitions(dst);
+        if (dstComp.partition == null) {
+          this.navMap.populatePartitions(dst.pos);
         }
-        if (
-          dstComp.partition === srcComp.partition &&
-          !dstComps.some((c) => c.cell === dstComp.cell && c.id === dstComp.id)
-        ) {
-          dstComps.push(dstComp);
+        if (dstComp.partition === srcComp.partition) {
+          dstComps.push({ comp: dstComp, initCost: dst.extraCost ?? 0 });
         }
       }
     }
@@ -232,26 +234,42 @@ export class FindPath implements Path {
       return undefined;
     }
 
+    // Remove duplicate components. Keep the one with min initCost
+    for (let i = dstComps.length - 1; i >= 0; i--) {
+      const dstComp = dstComps[i];
+      if (
+        dstComps.some(
+          (c) =>
+            c !== dstComp &&
+            c.comp.cell === dstComp.comp.cell &&
+            c.comp.id === dstComp.comp.id &&
+            c.initCost <= dstComp.initCost
+        )
+      ) {
+        dstComps.splice(i, 1);
+      }
+    }
+
     const visited = new Map<string, CoarsePathNode>();
     const open = new PriorityQueue<CoarsePathNode>({
-      property: 'value',
+      property: "value",
       ascending: true,
     });
 
     // We search backwards
     for (const dstComp of dstComps) {
       open.add({
-        component: dstComp,
+        component: dstComp.comp,
         to: undefined,
-        costToDestination: 0,
-        value: this.estimateCoarseCost(srcComp, dstComp),
+        costToDestination: dstComp.initCost,
+        value: this.estimateCoarseCost(srcComp, dstComp.comp),
       });
     }
 
     while (open.size > 0) {
       if (open.size > 700) {
         Logger.error(
-          'Pathfinder: Too many nodes! (coarse)',
+          "Pathfinder: Too many nodes! (coarse)",
           source,
           destinations
         );
@@ -336,12 +354,12 @@ export class FindPath implements Path {
 
   protected searchVoxelPath(
     source: Vector3D,
-    destinations: Vector3D[],
+    destinations: Destination[],
     coarseSource?: CoarsePathNode,
     coarseDestination?: CoarsePathNode
   ): PathNode[] | undefined {
     if (destinations.length === 0 && !coarseDestination) {
-      throwError('Pathfinder: Empty destinations array!');
+      throwError("Pathfinder: Empty destinations array!");
     }
 
     const srcComp =
@@ -356,40 +374,22 @@ export class FindPath implements Path {
       value: this.estimateVoxelCost(source, destinations),
     };
 
-    // Determine goal position (not the actual destination; only used for A* priority)
-    let goalPos: Vector3D[] | undefined = destinations;
+    // Determine next goal position within the cell (not the actual destination; only used for A* priority)
+    let goalPos: Destination[];
     if (coarseDestination?.to) {
       const cellVolume = coarseDestination.component.cell.volume;
       const nextCellVolume = coarseDestination.to.component.cell.volume;
       const goalPos0 = lerpVector(cellVolume.min, nextCellVolume.max, 0.5);
-      goalPos = [goalPos0];
+      goalPos = [{ pos: goalPos0, extraCost: 0 }];
     } else {
-      let average = vector.new(0, 0, 0);
-      for (const dst of destinations) {
-        average.x += dst.x;
-        average.y += dst.y;
-        average.z += dst.z;
-      }
-      average.x /= destinations.length;
-      average.y /= destinations.length;
-      average.z /= destinations.length;
-
-      let deviation = 0;
-      for (const dst of destinations) {
-        deviation += sqDist(average, dst);
-      }
-      deviation = Math.sqrt(deviation / destinations.length);
-
-      if (deviation < 7) {
-        goalPos = [vector.round(average)];
-      }
+      goalPos = destinations;
     }
 
     const limit = coarseSource?.component.cell.volume;
 
     const visited = new Map<string, PathNode>();
     const open = new PriorityQueue<PathNode>({
-      property: 'value',
+      property: "value",
       ascending: true,
     });
     open.add(sourceNode);
@@ -397,7 +397,7 @@ export class FindPath implements Path {
     while (open.size > 0) {
       if (open.size > 300) {
         Logger.error(
-          'Pathfinder: Too many nodes! (voxel)',
+          "Pathfinder: Too many nodes! (voxel)",
           source,
           destinations
         );
@@ -426,7 +426,7 @@ export class FindPath implements Path {
         }
       } else {
         for (const destination of destinations) {
-          if (equalVectors(current.position, destination)) {
+          if (equalVectors(current.position, destination.pos)) {
             reached = true;
             break;
           }
@@ -508,11 +508,12 @@ export class FindPath implements Path {
 
   private estimateVoxelCost(
     position: Vector3D,
-    destinations: Vector3D[]
+    destinations: Destination[]
   ): number {
     let minDist2 = Infinity;
     for (const destination of destinations) {
-      const dist2 = sqDist(position, destination);
+      const dist2 =
+        sqDist(position, destination.pos) + destination.extraCost ** 2;
       if (dist2 < minDist2) minDist2 = dist2;
     }
     return Math.sqrt(minDist2);

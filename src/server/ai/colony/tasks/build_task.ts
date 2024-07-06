@@ -1,4 +1,3 @@
-import { Agent } from 'server/ai/colony/agent';
 import { ActionResult } from 'server/ai/colony/action_result';
 import { Task } from 'server/ai/colony/task';
 import { Tasks } from 'server/ai/colony/task_helper';
@@ -7,6 +6,7 @@ import { Logger } from 'utils/logger';
 import { Locomotion } from 'server/entity/locomotion/locomotion';
 import { BlockPhysics } from 'common/block/physics';
 import { WorkerCapabilities } from 'server/ai/colony/worker_capabilities';
+import { MinionAgent } from 'server/ai/colony/minion_agent';
 
 export class BuildTask extends Task {
   constructor(
@@ -30,7 +30,7 @@ export class BuildTask extends Task {
     );
   }
 
-  estimateCost(agent: Agent): number {
+  estimateCost(agent: MinionAgent): number {
     if (this.isStrictlyImpossible()) {
       return Infinity;
     }
@@ -42,7 +42,7 @@ export class BuildTask extends Task {
     return path.estimateCost();
   }
 
-  execute(dt: number, agent: Agent): void {
+  execute(dt: number, agent: MinionAgent): void {
     Tasks.expectNode(this, this.block.registry.ghost.name);
     if (!this.isActive()) return;
 

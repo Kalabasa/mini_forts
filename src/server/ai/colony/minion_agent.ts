@@ -1,20 +1,25 @@
-import { IsNode } from 'common/block/is_node';
-import { ActionResult } from 'server/ai/colony/action_result';
-import { Agent } from 'server/ai/colony/agent';
-import { Operable } from 'server/ai/colony/operable';
-import { Path } from 'server/ai/pathfinder/path';
-import { Pathfinder } from 'server/ai/pathfinder/pathfinder';
-import { Paths } from 'server/ai/pathfinder/path_helper';
-import { MinionDef } from 'server/entity/minion/def';
-import { MinionAction, MinionScript } from 'server/entity/minion/script';
-import { ReadonlyGameContext } from 'server/game/context';
-import { Logger } from 'utils/logger';
-import { equalVectors } from 'utils/math';
-import { IntervalTimer } from 'utils/timer';
+import { IsNode } from "common/block/is_node";
+import { ActionResult } from "server/ai/colony/action_result";
+import { Operable } from "server/ai/colony/operable";
+import { Task } from "server/ai/colony/task";
+import { TaskManager } from "server/ai/colony/task_manager";
+import { Path } from "server/ai/pathfinder/path";
+import { Pathfinder } from "server/ai/pathfinder/pathfinder";
+import { Locomotion } from "server/entity/locomotion/locomotion";
+import { MinionDef } from "server/entity/minion/def";
+import { MinionScript, MinionAction } from "server/entity/minion/script";
+import { ReadonlyGameContext } from "server/game/context";
+import { Logger } from "utils/logger";
+import { equalVectors } from "utils/math";
+import { IntervalTimer } from "utils/timer";
+import { Paths } from "server/ai/pathfinder/path_helper";
 
-export class MinionAgent extends Agent {
+export class MinionAgent {
   readonly pathfinder: Pathfinder;
-  readonly locomotion = MinionDef.properties.locomotion;
+  readonly locomotion: Locomotion = MinionDef.properties.locomotion;
+
+  readonly task: Task | undefined;
+  private taskManager: TaskManager;
 
   private readonly idleTimer = new IntervalTimer(1);
 
@@ -22,11 +27,16 @@ export class MinionAgent extends Agent {
     context: ReadonlyGameContext,
     private readonly minion: MinionScript
   ) {
-    super();
     this.pathfinder = Pathfinder.get(context, this.locomotion);
   }
 
-  override update(dt: number) {
+  unassignTask(): void {
+    if (this.task) {
+      this.taskManager.unassignAgent(this);
+    }
+  }
+
+  update(dt: number): void {
     if (this.idleTimer.updateAndCheck(dt)) {
       // todo: apply this fix to general walkClimb locomotion
       // This fixes pathfinding when agent is standing at the edge
@@ -123,6 +133,10 @@ export class MinionAgent extends Agent {
         return ActionResult.Stopped;
       }
     }
+  }
+
+  setContext(taskManager: TaskManager): void {
+    this.taskManager = taskManager;
   }
 
   [Logger.String]() {

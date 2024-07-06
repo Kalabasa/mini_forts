@@ -1,5 +1,5 @@
 import { Profiling } from 'common/debug/profiling';
-import { FindPath, Path } from 'server/ai/pathfinder/path';
+import { FindPath } from 'server/ai/pathfinder/path';
 import { DebugMarker } from 'server/debug/debug_marker';
 import { CONFIG } from 'utils/config';
 import { Logger } from 'utils/logger';
@@ -150,7 +150,7 @@ export class DebugPath extends FindPath {
     }
 
     for (const dst of this.destinations ?? []) {
-      DebugMarker.mark(dst, {
+      DebugMarker.mark(dst.pos, {
         type: DebugMarker.Point.Yellow,
         nametag: 'dst',
         duration,

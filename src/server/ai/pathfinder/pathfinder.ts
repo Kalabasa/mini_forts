@@ -1,18 +1,16 @@
-import { DebugNavMap } from 'server/ai/pathfinder/debug_nav_map';
-import { DebugPath } from 'server/ai/pathfinder/debug_path';
-import { NavMap } from 'server/ai/pathfinder/nav_map';
-import { FindPath, NoopPath, Path } from 'server/ai/pathfinder/path';
-import { Locomotion } from 'server/entity/locomotion/locomotion';
-import { ReadonlyGameContext } from 'server/game/context';
+import { DebugNavMap } from "server/ai/pathfinder/debug_nav_map";
+import { DebugPath } from "server/ai/pathfinder/debug_path";
+import { NavMap } from "server/ai/pathfinder/nav_map";
+import { Destination, FindPath, Path } from "server/ai/pathfinder/path";
+import { Locomotion } from "server/entity/locomotion/locomotion";
+import { ReadonlyGameContext } from "server/game/context";
 import {
   AddBlockEvent,
-  CompleteStageLoadEvent,
   LoadMapChunkEvent,
   RemoveBlockEvent,
   StartStageLoadEvent,
-} from 'server/game/events';
-import { CONFIG } from 'utils/config';
-import { Logger } from 'utils/logger';
+} from "server/game/events";
+import { CONFIG } from "utils/config";
 
 // Actual pathfinder algorithm is in Path class
 
@@ -49,10 +47,24 @@ export class Pathfinder {
   }
 
   findPath(source: Vector3D, destination: Vector3D): Path {
-    return createPath(source, [destination], this.locomotion, this.navMap);
+    return createPath(
+      source,
+      [{ pos: destination, extraCost: 0 }],
+      this.locomotion,
+      this.navMap
+    );
   }
 
   findAnyPath(source: Vector3D, destinations: Vector3D[]): Path {
+    return createPath(
+      source,
+      destinations.map((pos) => ({ pos, extraCost: 0 })),
+      this.locomotion,
+      this.navMap
+    );
+  }
+
+  findPriorityPath(source: Vector3D, destinations: Destination[]): Path {
     return createPath(source, destinations, this.locomotion, this.navMap);
   }
 
