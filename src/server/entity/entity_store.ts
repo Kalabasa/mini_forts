@@ -305,7 +305,7 @@ export class EntityStore {
     this.dirty = false;
   }
 
-  // returns index of the entity having the minimum x position that greater than or equal to the specified x position
+  // returns index of the entity having the minimum x position that's greater than or equal to the specified x position
   // if multiple entities have the same minimum x positions, the index of the entitiy with the lowest index is returned
   private findIndex(x: number): number {
     let l = 0;

@@ -39,8 +39,7 @@ import { Logger } from 'utils/logger';
 import { vectorFloorDiv } from 'utils/math';
 import { Volume } from 'utils/space';
 
-export const registeredBlocksByID = new Map<number, BlockDefinition>();
-export const registeredBlocksByNodeName = new Map<string, BlockDefinition>();
+const registeredNodeNames: string[] = [];
 
 export function registerBlocks(game: Game, blockManager: BlockManager) {
   Logger.info('Registering blocks...');
@@ -67,7 +66,7 @@ export function registerBlocks(game: Game, blockManager: BlockManager) {
   minetest.register_lbm({
     name: res('node_load_event'),
     label: 'Block load event',
-    nodenames: [...registeredBlocksByNodeName.keys()],
+    nodenames: registeredNodeNames,
     run_at_every_load: true,
     action: (pos: Vector3D, node: Node) => {
       const validBounds = game.getStageBounds();
@@ -191,9 +190,8 @@ export function registerBlocks(game: Game, blockManager: BlockManager) {
 
 function registerNode(name: string, nodeDef: NodeDefinition, blockDef: BlockDefinition) {
   minetest.register_node(name, nodeDef);
+  registeredNodeNames.push(name);
   const id = minetest.get_content_id(name);
-  registeredBlocksByNodeName.set(name, blockDef);
-  registeredBlocksByID.set(id, blockDef);
   return { name, id };
 }
 

@@ -4,7 +4,7 @@ import {
   BlockProperties,
   BlockRefInstance,
 } from 'server/block/block';
-import { BlockManager } from 'server/block/block_manager';
+import { BlockManager, ReadonlyBlockManager } from 'server/block/block_manager';
 import { BlockPhysicsEngine } from 'server/block/block_physics_engine';
 import { CoreCrystalDef } from 'server/block/core_crystal/def';
 import {
@@ -88,6 +88,10 @@ export class Game implements GameContext {
 
   getDirector(): Director {
     return this.director;
+  }
+
+  getBlockManager(): ReadonlyBlockManager {
+    return this.blockManager;
   }
 
   getStageNumber(): number {

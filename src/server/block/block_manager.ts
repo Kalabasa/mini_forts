@@ -1,9 +1,12 @@
 import { BlockDefinition, BlockRef } from 'server/block/block';
 import { GameContext } from 'server/game/context';
-import { throwError } from 'utils/error';
 import { WeakValueMap } from 'utils/weak_ref';
 
-export class BlockManager {
+export interface ReadonlyBlockManager {
+  getDefByNodeID(id: number): BlockDefinition | undefined;
+}
+
+export class BlockManager implements ReadonlyBlockManager {
   private context: GameContext;
 
   private readonly nameToDef: Partial<Record<string, BlockDefinition>> = {};

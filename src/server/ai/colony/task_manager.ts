@@ -244,6 +244,9 @@ export class TaskManager {
         // place costs in the matrix
         const index = i + j * stride;
         this.buffer[index] = cost;
+        if (Number.isNaN(cost)) {
+          throwError('NaN task cost', task, agent);
+        }
 
         // place sums on the extra row and column
         if (cost < Infinity) {

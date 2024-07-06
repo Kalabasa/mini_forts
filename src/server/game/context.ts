@@ -1,5 +1,5 @@
 import { BlockDefinition, BlockRefInstance } from 'server/block/block';
-import { BlockManager } from 'server/block/block_manager';
+import { BlockManager, ReadonlyBlockManager } from 'server/block/block_manager';
 import { BlockPhysicsEngine } from 'server/block/block_physics_engine';
 import { EntityDefinition, EntityInstance } from 'server/entity/entity';
 import { EntityStore } from 'server/entity/entity_store';
@@ -31,6 +31,7 @@ export interface ReadonlyGameContext {
   getStageNumber(): number;
   getStageBounds(): Volume;
   getHomePosition(): Vector3D;
+  getBlockManager(): ReadonlyBlockManager;
   getResource(type: ResourceType): number;
   hasResource(resource: Resource): boolean;
   waitUntilMapLoaded(position: Vector3D, callback: Function): void;

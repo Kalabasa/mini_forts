@@ -29,8 +29,8 @@ Logger.info('-----------------------------');
 seedRandom(minetest.get_us_time());
 
 const world = new World();
-const colonyAI = new ColonyAI();
 const blockManager = new BlockManager();
+const colonyAI = new ColonyAI();
 const entityStore = new EntityStore();
 const game = new Game(world, blockManager, entityStore, colonyAI);
 
