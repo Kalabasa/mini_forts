@@ -95,9 +95,9 @@ export class ColonyAI {
     const critical = health <= 8;
 
     const priority =
-      critical || ratio < 0.3
+      critical || ratio < 0.6
         ? TaskPriority.High
-        : ratio < 0.8
+        : ratio < 0.9
         ? TaskPriority.Medium
         : TaskPriority.Low;
 
