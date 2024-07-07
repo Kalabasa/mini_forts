@@ -124,7 +124,7 @@ export class ExtractorScript
 
   private setRipe(ripe: boolean) {
     if (this.isRipe() !== ripe) {
-      if (!this.resourceType) {
+      if (this.resourceType) {
         this.changeState(getState(this.resourceType, ripe));
       }
       this.getData().ripeExtractor = ripe;
