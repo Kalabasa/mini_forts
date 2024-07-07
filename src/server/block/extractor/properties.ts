@@ -57,6 +57,7 @@ export class ExtractorProperties extends BlockProperties {
   };
 
   override tags = this.defineTags({
+    Operable: BlockTag.OperableTrue,
     BreakableBuilding: BlockTag.BreakableBuildingTrue,
   });
 

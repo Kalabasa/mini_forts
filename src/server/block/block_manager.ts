@@ -84,7 +84,7 @@ export class BlockManager implements ReadonlyBlockManager {
 
     const key = posKey(position);
     const ref = this.refCache.get(key);
-    if (ref) return ref.definition;
+    if (ref && ref.valid) return ref.definition;
 
     node = node ?? minetest.get_node(position);
     def = def ?? this.nodeNameToDef[node.name];

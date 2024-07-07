@@ -1,6 +1,7 @@
 import { IsNode } from 'common/block/is_node';
 import {
   BlockCallbacks,
+  BlockDamage,
   BlockDefinition,
   BlockProperties,
   BlockScript,
@@ -50,6 +51,8 @@ export class ExtractorScript
   onTimer() {
     this.updateState();
 
+    let depleted = false;
+
     if (this.resourceType) {
       let amount = 0;
 
@@ -63,7 +66,12 @@ export class ExtractorScript
               this.context.blockManager.getRef<
                 BlockScript<MineableBlockProperties>
               >(groundPos);
-            if (ref.getHealth() > 0) {
+            const health = ref.getHealth();
+            if (health === 1 && x === this.position.x && z === this.position.z ) {
+              depleted = true;
+              this.remove();
+            }
+            if (health > 0) {
               ref.damage(1);
               amount += block.properties.miningResource.amount;
             }
@@ -84,7 +92,9 @@ export class ExtractorScript
       }
     }
 
-    this.getTimer().start(mineInterval);
+    if (!depleted) {
+      this.getTimer().start(mineInterval);
+    }
   }
 
   private takeRoot() {
