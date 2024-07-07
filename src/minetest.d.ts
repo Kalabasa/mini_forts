@@ -1241,6 +1241,7 @@ declare global {
   interface _vector {
     ['new'](v: Vector3D): Vector3D;
     ['new'](a: number, b: number, c: number): Vector3D;
+    to_string(data: Vector2D | Vector3D): string;
     direction(p1: Vector3D, p2: Vector3D): Vector3D;
     distance(p1: Vector3D, p2: Vector3D): number;
     length(v: Vector3D): number;
@@ -1253,6 +1254,7 @@ declare global {
     dot(v1: Vector3D, v2: Vector3D): number;
     cross(v1: Vector3D, v2: Vector3D): Vector3D;
     offset(v: Vector3D, x: number, y: number, z: number): Vector3D;
+    check(v: unknown): v is Vector2D | Vector3D;
     add(v: Vector3D, x: Vector3D | number): Vector3D;
     subtract(v: Vector3D, x: Vector3D | number): Vector3D;
     multiply(v: Vector3D, s: number): Vector3D;
@@ -1339,6 +1341,7 @@ declare global {
   export interface NodeTimerRef {
     set(timeout: number, elapsed: number): void;
     start(timeout: number): void;
+    stop(): void;
     is_started(): boolean;
   }
 }

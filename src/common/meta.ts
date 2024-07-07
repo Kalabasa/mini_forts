@@ -8,12 +8,12 @@ export const Meta = {
 
 const metaKeys = {
   markedForDig: metaKey('marked_for_dig'),
-  effectActive: metaKey('effect_active'),
+  ripeExtractor: metaKey('ripe_extractor'),
 };
 
 export type NodeMeta = {
   hasDigMark: boolean;
-  effectActive: boolean;
+  ripeExtractor: boolean;
 };
 
 class MetaFacade implements NodeMeta {
@@ -35,18 +35,18 @@ class MetaFacade implements NodeMeta {
     this.getMeta().set_string(metaKeys.markedForDig, value ? 'y' : '');
   }
 
-  get effectActive(): boolean {
-    return this.getMeta().get(metaKeys.effectActive) === 'y';
+  get ripeExtractor(): boolean {
+    return this.getMeta().get(metaKeys.ripeExtractor) === 'y';
   }
 
-  set effectActive(value: boolean) {
-    this.getMeta().set_string(metaKeys.effectActive, value ? 'y' : '');
+  set ripeExtractor(value: boolean) {
+    this.getMeta().set_string(metaKeys.ripeExtractor, value ? 'y' : '');
   }
 
   [Logger.Props]() {
     return {
       hasDigMark: this.hasDigMark,
-      effectActive: this.effectActive,
+      ripeExtractor: this.ripeExtractor,
     };
   }
 }

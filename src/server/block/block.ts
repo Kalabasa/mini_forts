@@ -68,7 +68,7 @@ export class BlockDefinition<
     return this.properties.hasTimer();
   }
 
-  isOperable(): this is BlockDefinition.WithOperate {
+  isOperable(): this is BlockDefinition.WithTag<'Operable', 'True'> {
     return this.properties.isOperable();
   }
 
@@ -90,13 +90,12 @@ export namespace BlockDefinition {
     BlockProperties.WithTimer,
     BlockRef<BlockProperties.WithTimer>
   >;
-  export type WithOperate = BlockDefinition<
-    BlockProperties.WithOperate,
-    BlockRef<BlockProperties.WithOperate>
-  >;
-  export type WithUseScript = BlockDefinition<
-    BlockProperties.WithUseScript,
-    BlockRef<BlockProperties.WithUseScript>
+  export type WithTag<
+    T extends BlockTag.TagName,
+    V extends BlockTag.ValueName<T>
+  > = BlockDefinition<
+    BlockProperties.WithTag<T, V>,
+    BlockRef<BlockProperties.WithTag<T, V>>
   >;
 }
 
@@ -109,11 +108,11 @@ export namespace BlockProperties {
   export type WithTimer = BlockProperties & {
     scriptCallbacks: { onTimer: true };
   };
-  export type WithOperate = BlockProperties & {
-    operable: true;
-  };
-  export type WithUseScript = BlockProperties & {
-    useTag: typeof BlockTag.UseScript;
+  export type WithTag<
+    T extends BlockTag.TagName,
+    V extends BlockTag.ValueName<T>
+  > = BlockProperties & {
+    tags: Record<T, BlockTag.CodeValue<T, V>>;
   };
 
   export type Tags = {
@@ -177,13 +176,18 @@ export abstract class BlockProperties {
     return this.scriptCallbacks?.onTimer === true;
   }
 
-  isOperable(): this is BlockProperties.WithOperate {
+  isOperable(): this is BlockProperties.WithTag<'Operable', 'True'> {
     return this.tags.Operable === BlockTag.OperableTrue;
   }
 
-  protected defineTags(tags: { [T in BlockTag.TagName]?: BlockTag.Code<T> }): {
-    [T in BlockTag.TagName]?: BlockTag.Code<T>;
-  } {
+  protected defineTags<
+    T extends {
+      [K in Exclude<
+        BlockTag.TagName,
+        'PhysicsAttachment' | 'PhysicsSupport'
+      >]?: BlockTag.Code<K>;
+    }
+  >(tags: T): T {
     return { ...this.tags, ...tags };
   }
 
@@ -232,13 +236,13 @@ export type BlockCallbacks<Properties> = {} & Callback<
 > &
   Callback<
     Properties,
-    BlockProperties.WithUseScript,
+    BlockProperties.WithTag<'Use', 'Script'>,
     { onUseScript(user: PlayerObject): void }
   > &
   Callback<Properties, BlockProperties.WithTimer, { onTimer(): void }> &
   Callback<
     Properties,
-    BlockProperties.WithOperate,
+    BlockProperties.WithTag<'Operable', 'True'>,
     { startOperation(): void; endOperation(): void }
   >;
 
@@ -437,7 +441,7 @@ export class BlockScript<P extends BlockProperties = BlockProperties>
     return this.properties.hasTimer();
   }
 
-  isOperable(): this is BlockRef<BlockProperties.WithOperate> {
+  isOperable(): this is BlockRef<BlockProperties.WithTag<'Operable', 'True'>> {
     return this.properties.isOperable();
   }
 

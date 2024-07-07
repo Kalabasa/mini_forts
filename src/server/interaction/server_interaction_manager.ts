@@ -92,7 +92,7 @@ class PlayerInteractionContext implements InteractionContext {
     if (useTag === BlockTag.UseScript) {
       const ref =
         this.gameContext.blockManager.getRef<
-          BlockRef<BlockProperties.WithUseScript>
+          BlockRef<BlockProperties.WithTag<'Use', 'Script'>>
         >(position);
 
       ref.onUseScript(this.player.playerObj);

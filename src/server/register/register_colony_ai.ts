@@ -24,6 +24,9 @@ import {
 } from 'server/game/events';
 import { Game } from 'server/game/game';
 import { createLogger, Logger } from 'utils/logger';
+import { ExtractorDef } from 'server/block/extractor/def';
+import { ExtractorScript } from 'server/block/extractor/script';
+import { ExtractorOperable } from 'server/ai/colony/operables/extractor_operable';
 
 export function registerColonyAI(
   game: Game,
@@ -70,6 +73,10 @@ export function registerColonyAI(
       logger.info('Adding BallistaOperable:', position);
       const blockRef = blockManager.getRef<BallistaScript>(position);
       colonyAI.addOperable(new BallistaOperable(blockRef, position, game));
+    } else if (blockDef === ExtractorDef) {
+      logger.info('Adding ExtractorOperable:', position);
+      const blockRef = blockManager.getRef<ExtractorScript>(position);
+      colonyAI.addOperable(new ExtractorOperable(blockRef, position, game));
     } else if (blockDef === DenDef) {
       logger.info('Adding Den:', position);
       colonyAI.addDen(position);
@@ -86,6 +93,9 @@ export function registerColonyAI(
 
     if (event.blockDef === BallistaDef) {
       logger.info('Removing BallistaOperable:', event.position);
+      colonyAI.removeOperable(event.position);
+    } else if (event.blockDef === ExtractorDef) {
+      logger.info('Removing ExtractorOperable:', event.position);
       colonyAI.removeOperable(event.position);
     } else if (event.blockDef === DenDef) {
       logger.info('Removing Den:', event.position);

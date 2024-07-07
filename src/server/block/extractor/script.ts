@@ -1,25 +1,24 @@
 import { IsNode } from 'common/block/is_node';
 import {
   BlockCallbacks,
-  BlockDamage,
   BlockDefinition,
   BlockProperties,
-  BlockScript,
-  BlockState,
+  BlockScript
 } from 'server/block/block';
 import { MineableBlockState } from 'server/block/extractor/constants';
 import { ExtractorProperties } from 'server/block/extractor/properties';
 import { ResourceType } from 'server/game/resources';
 import { equalVectors } from 'utils/math';
 
-const mineInterval = 12;
+const mineTime = 90;
+const harvestTime = 2;
 
-const resourceTypeStateMap = defineResourceTypeStateMap({
+const resourceTypeToInitialState = {
   [ResourceType.Metal]: 'metal',
   [ResourceType.Spore]: 'spore',
   [ResourceType.Stone]: 'stone',
   [ResourceType.Wood]: 'wood',
-});
+} as const;
 
 export class ExtractorScript
   extends BlockScript<ExtractorProperties>
@@ -31,10 +30,8 @@ export class ExtractorScript
     const resourceType = this.findResourceType();
     this.resourceType = resourceType;
 
-    super.initializeNode(stateFromResourceType(resourceType));
+    super.initializeNode(getState(resourceType, false));
     this.takeRoot();
-
-    this.getTimer().start(mineInterval);
   }
 
   override activate() {
@@ -42,58 +39,95 @@ export class ExtractorScript
       this.resourceType = this.findResourceType();
     }
 
-    const timer = this.getTimer();
-    if (!timer.is_started()) {
-      timer.start(mineInterval);
+    if (!this.isRipe()) {
+      const timer = this.getTimer();
+      if (!timer.is_started()) {
+        timer.start(mineTime);
+      }
     }
   }
 
   onTimer() {
-    this.updateState();
+    if (!this.resourceType) return;
 
+    if (this.isRipe()) {
+      this.finishHarvest();
+    } else {
+      this.setRipe(true);
+    }
+  }
+
+  startOperation() {
+    if (!this.isRipe()) return;
+
+    const timer = this.getTimer();
+    if (!timer.is_started()) {
+      timer.start(harvestTime);
+    }
+  }
+
+  endOperation() {
+    if (!this.isRipe()) return;
+
+    this.getTimer().stop();
+  }
+
+  finishHarvest() {
+    if (!this.resourceType || !this.isRipe()) return;
+
+    let amount = 0;
     let depleted = false;
 
-    if (this.resourceType) {
-      let amount = 0;
-
-      const y = this.position.y - 1;
-      for (const x of $range(this.position.x - 1, this.position.x + 1)) {
-        for (const z of $range(this.position.z - 1, this.position.z + 1)) {
-          const groundPos = { x, y, z };
-          const block = this.getMineableBlock(groundPos);
-          if (block) {
-            const ref =
-              this.context.blockManager.getRef<
-                BlockScript<MineableBlockProperties>
-              >(groundPos);
-            const health = ref.getHealth();
-            if (health === 1 && x === this.position.x && z === this.position.z ) {
-              depleted = true;
-              this.remove();
-            }
-            if (health > 0) {
-              ref.damage(1);
-              amount += block.properties.miningResource.amount;
-            }
+    const y = this.position.y - 1;
+    for (const x of $range(this.position.x - 1, this.position.x + 1)) {
+      for (const z of $range(this.position.z - 1, this.position.z + 1)) {
+        const groundPos = { x, y, z };
+        const block = this.getMineableBlock(groundPos);
+        if (block) {
+          const ref =
+            this.context.blockManager.getRef<
+              BlockScript<MineableBlockProperties>
+            >(groundPos);
+          const health = ref.getHealth();
+          if (health === 1 && x === this.position.x && z === this.position.z) {
+            depleted = true;
+            this.remove();
+          }
+          if (health > 0) {
+            ref.damage(1);
+            amount += block.properties.miningResource.amount;
           }
         }
       }
+    }
 
-      // todo: make harvestable for minions (keep minions busy so they don't just stand around, and make base design more cohesive)
-      if (amount > 0) {
-        this.context.addResource(
-          { type: this.resourceType, amount },
-          {
-            x: this.position.x,
-            y: this.position.y + 0.5,
-            z: this.position.z,
-          }
-        );
-      }
+    if (amount > 0) {
+      this.context.addResource(
+        { type: this.resourceType, amount },
+        {
+          x: this.position.x,
+          y: this.position.y + 0.5,
+          z: this.position.z,
+        }
+      );
     }
 
     if (!depleted) {
-      this.getTimer().start(mineInterval);
+      this.setRipe(false);
+      this.getTimer().start(mineTime);
+    }
+  }
+
+  private isRipe() {
+    return this.getData().ripeExtractor;
+  }
+
+  private setRipe(ripe: boolean) {
+    if (this.isRipe() !== ripe) {
+      if (!this.resourceType) {
+        this.changeState(getState(this.resourceType, ripe));
+      }
+      this.getData().ripeExtractor = ripe;
     }
   }
 
@@ -116,7 +150,6 @@ export class ExtractorScript
         groundPos
       );
 
-    // todo: check remaining resources
     ref.changeState(MineableBlockState.MYCELIAL);
   }
 
@@ -160,14 +193,6 @@ export class ExtractorScript
     });
     return blockUnder?.properties.miningResource?.type;
   }
-
-  private updateState() {
-    const resourceType = this.findResourceType();
-    if (resourceType !== this.resourceType) {
-      this.changeState(stateFromResourceType(resourceType));
-      this.resourceType = resourceType;
-    }
-  }
 }
 
 type MineableBlockProperties = BlockProperties & {
@@ -188,17 +213,13 @@ function isMineable(
   );
 }
 
-function stateFromResourceType(
-  resourceType: ResourceType | undefined
-): BlockState<ExtractorProperties> {
-  return resourceType ? resourceTypeStateMap[resourceType] : 'default';
+function getState(resourceType: ResourceType | undefined, ripe: boolean) {
+  const ripeSuffix = ripe ? 'Ripe' : '';
+  return resourceType
+    ? concat(resourceTypeToInitialState[resourceType], ripeSuffix)
+    : 'default';
 }
 
-function defineResourceTypeStateMap<
-  T extends Record<
-    ResourceType,
-    Exclude<BlockState<ExtractorProperties>, 'default'>
-  >
->(map: T): T {
-  return map;
+function concat<A extends string, B extends string>(a: A, b: B) {
+  return (a + b) as `${A}${B}`;
 }

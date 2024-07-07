@@ -10,12 +10,4 @@ export class BallistaOperable extends Operable<typeof BallistaDef> {
 
     return enemyInRange ? TaskPriority.High : undefined;
   }
-
-  startOperation(): void {
-    this.blockRef.startOperation();
-  }
-
-  endOperation(): void {
-    this.blockRef.endOperation();
-  }
 }

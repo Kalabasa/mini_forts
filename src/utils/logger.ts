@@ -69,6 +69,9 @@ function formatSingle(
   if (['string', 'number', 'boolean', 'function'].includes(typeof data)) {
     return data.toString();
   }
+  if (vector.check(data)) {
+    return vector.to_string(data);
+  }
 
   if (Array.isArray(data)) {
     return `[${data.map((item) => formatValue(item, memory)).join(', ')}]`;
@@ -100,13 +103,6 @@ function formatSingle(
         )
         .join(', ');
       return `Map(size=${data.size} values={${valuesString}})`;
-    }
-
-    const propertyNames = Object.keys(data);
-    if (equalSet(propertyNames, ['x', 'y'])) {
-      return `(${data.x},${data.y})`;
-    } else if (equalSet(propertyNames, ['x', 'y', 'z'])) {
-      return `(${data.x},${data.y},${data.z})`;
     }
 
     // is class instance
