@@ -11,7 +11,7 @@ const mycelialTexture = tex(rockPng, '^[sheet:4x1:2,0');
 const exMycelialTexture = tex(rockPng, '^[sheet:4x1:3,0');
 
 export class RockProperties extends BlockProperties {
-  override health = 100;
+  override health = 50;
   override digTime = 6;
 
   override physics = {

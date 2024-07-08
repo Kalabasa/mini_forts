@@ -1,4 +1,5 @@
 import { IsNode } from 'common/block/is_node';
+import { WorkerCapabilities } from 'server/ai/colony/worker_capabilities';
 import { BallistaBolt } from 'server/block/ballista/ballista_head/ballista_bolt';
 import { BallistaHeadProperties } from 'server/block/ballista/ballista_head/properties';
 import { BlockEntityScript } from 'server/block/entity_block/block_entity';
@@ -31,25 +32,14 @@ export class BallistaHeadScript extends BlockEntityScript<BallistaHeadProperties
 
   override update(dt: number) {
     const pos = this.getVoxelPosition();
+
     let target: Entity | undefined;
 
     if (
       this.operational &&
       this.context.hasResource(this.properties.ammunition)
     ) {
-      let targetDist2 = Infinity;
-
-      const nearbyEntities = this.context.entityStore.find(
-        this.getTargetQuery()
-      );
-
-      for (const entity of nearbyEntities) {
-        const dist2 = sqDist(pos, entity.objRef.get_pos());
-        if (dist2 < targetDist2) {
-          targetDist2 = dist2;
-          target = entity;
-        }
-      }
+      target = this.getTarget();
 
       if (target) {
         const delta = vector.subtract(target.objRef.get_pos(), pos);
@@ -112,6 +102,47 @@ export class BallistaHeadScript extends BlockEntityScript<BallistaHeadProperties
     }
   }
 
+  getOperatorPositions() {
+    const target = this.getTarget();
+    if (!target) return [];
+
+    const targetPos = target.objRef.get_pos();
+    return WorkerCapabilities.getOperatePositions(
+      this.getVoxelPosition()
+    ).filter((operatePos) => this.canOperatorTarget(targetPos, operatePos));
+  }
+
+  private canOperatorTarget(targetPos: Vector3D, operatePos: Vector3D) {
+    const pos = this.getVoxelPosition();
+    const dirToTarget = vector.direction(pos, targetPos);
+    const dirToOperator = vector.direction(pos, operatePos);
+    const dot = vector.dot(dirToTarget, dirToOperator);
+    return dot < 0.71;
+  }
+
+  getTarget() {
+    const home = this.context.getHomePosition();
+    const pos = this.getVoxelPosition();
+
+    let targetScore = Infinity;
+    let target: Entity | undefined;
+
+    const nearbyTargetCandidates = this.context.entityStore.find(
+      this.getTargetQuery()
+    );
+
+    for (const targetCandidate of nearbyTargetCandidates) {
+      const targetPos = targetCandidate.objRef.get_pos();
+      const score = sqDist(pos, targetPos) + sqDist(home, targetPos) * 2;
+      if (score < targetScore) {
+        targetScore = score;
+        target = targetCandidate;
+      }
+    }
+
+    return target;
+  }
+
   getTargetQuery() {
     return {
       sphereCenter: this.getVoxelPosition(),
@@ -119,17 +150,30 @@ export class BallistaHeadScript extends BlockEntityScript<BallistaHeadProperties
       faction: Faction.Attackers,
       alive: true,
       damageable: true,
-      filter: (entity) => this.canTarget(entity, false),
+      filter: (entity) => this.canTarget(entity, false, true),
     };
   }
 
-  canTarget(entity: Entity, checkDistance: boolean = true): boolean {
+  canTarget(
+    entity: Entity,
+    checkDistance: boolean = true,
+    checkOperableAngle: boolean = true
+  ): boolean {
     const origin = this.getVoxelPosition();
     const target = entity.objRef.get_pos();
 
     if (checkDistance) {
       const dist2 = sqDist(origin, target);
       if (dist2 > this.properties.shotRange ** 2) return false;
+    }
+
+    if (
+      checkOperableAngle &&
+      WorkerCapabilities.getOperatePositions(origin).every(
+        (operatorPos) => !this.canOperatorTarget(target, operatorPos)
+      )
+    ) {
+      return false;
     }
 
     const raycast = Raycast(origin, target, false, false);

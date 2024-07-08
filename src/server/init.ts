@@ -18,6 +18,7 @@ import { World } from 'server/world/world';
 import { CONFIG } from 'utils/config';
 import { Logger } from 'utils/logger';
 import { seedRandom } from 'utils/math';
+import { registerDebugNavMap } from 'server/ai/pathfinder/debug_nav_map';
 
 Logger.info('=============================');
 Logger.info('||        MiniForts        ||');
@@ -47,5 +48,6 @@ registerHUD(game, guiManager);
 registerGame(game);
 registerCheats(game);
 registerDebugPointed(game);
+registerDebugNavMap(game);
 
 Logger.info('Init done!');

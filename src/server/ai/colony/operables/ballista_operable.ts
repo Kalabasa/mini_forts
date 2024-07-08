@@ -10,4 +10,8 @@ export class BallistaOperable extends Operable<typeof BallistaDef> {
 
     return enemyInRange ? TaskPriority.High : undefined;
   }
+
+  override getOperatorPositions(): Vector3D[] {
+    return this.blockRef.entity.getOperatorPositions();
+  }
 }

@@ -441,7 +441,7 @@ export class BlockScript<P extends BlockProperties = BlockProperties>
     return this.properties.hasTimer();
   }
 
-  isOperable(): this is BlockRef<BlockProperties.WithTag<'Operable', 'True'>> {
+  isOperable(fromPosition?: Vector3D): this is BlockRef<BlockProperties.WithTag<'Operable', 'True'>> {
     return this.properties.isOperable();
   }
 

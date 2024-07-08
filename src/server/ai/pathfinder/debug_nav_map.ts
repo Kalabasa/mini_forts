@@ -1,27 +1,32 @@
-import { Profiling } from "common/debug/profiling";
-import { NavComponent, NavMap } from "server/ai/pathfinder/nav_map";
-import { DebugMarker } from "server/debug/debug_marker";
-import { CONFIG } from "utils/config";
-import { Logger } from "utils/logger";
-import { ZERO_V, lerpVector, randomInt } from "utils/math";
-import { IntervalTimer } from "utils/timer";
-import { WeakRef } from "utils/weak_ref";
+import { Profiling } from 'common/debug/profiling';
+import { globals } from 'common/globals';
+import { NavComponent, NavMap } from 'server/ai/pathfinder/nav_map';
+import { DebugMarker } from 'server/debug/debug_marker';
+import { Game } from 'server/game/game';
+import { RemotePlayer } from 'server/player/remote_player';
+import { CONFIG } from 'utils/config';
+import { Logger } from 'utils/logger';
+import { ZERO_V, lerpVector } from 'utils/math';
+import { IntervalTimer } from 'utils/timer';
+import { WeakRef } from 'utils/weak_ref';
 
-if (CONFIG.isDev) {
-  minetest.register_chatcommand("debug_navmap", {
-    params: "<name>",
+export function registerDebugNavMap(game: Game) {
+  if (CONFIG.isProd) return;
+
+  minetest.register_chatcommand('debug_navmap', {
+    params: '<name>',
     func: (playerName, param) => {
-      const playerObj = minetest.get_player_by_name(playerName);
+      const player = game.findPlayerByName(playerName);
 
-      if (!playerObj) return $multi(false, "No player");
+      if (!player) return $multi(false, 'No player');
 
       const name = param.trim();
 
       if (name.length === 0) {
-        const names = ["off", ...instances.keys()].join(", ");
+        const names = ['off', ...instances.keys()].join(', ');
         return $multi(
           false,
-          `Missing name parameter. Expected one of: ${names}`
+          `Missing parameter. Expected one of: ${names}`
         );
       }
 
@@ -29,7 +34,7 @@ if (CONFIG.isDev) {
         instance.deref()?.setActiveFor(null);
       }
 
-      if (name !== "off") {
+      if (name !== 'off') {
         const ref = instances.get(name);
         const instance = ref?.deref();
 
@@ -38,7 +43,7 @@ if (CONFIG.isDev) {
           return $multi(false, `No DebugNavMap instance for name: '${name}'`);
         }
 
-        instance.setActiveFor(playerObj);
+        instance.setActiveFor(player);
       }
 
       return $multi(true);
@@ -68,36 +73,51 @@ export class DebugNavMap extends NavMap {
     return instance;
   }
 
-  private activeFor: PlayerObject | null = null;
+  private activeFor: RemotePlayer | null = null;
 
   private constructor(...params: ConstructorParameters<typeof NavMap>) {
     super(...params);
   }
 
-  override invalidateRegion(...args: Parameters<NavMap["invalidateRegion"]>) {
-    Profiling.startTimer("invalidateRegion");
+  override invalidateRegion(...args: Parameters<NavMap['invalidateRegion']>) {
+    Profiling.startTimer('invalidateRegion');
     const result = super.invalidateRegion(...args);
-    Profiling.endTimer("invalidateRegion");
+    Profiling.endTimer('invalidateRegion');
     return result;
   }
 
   override populatePartitions(
-    ...args: Parameters<NavMap["populatePartitions"]>
+    ...args: Parameters<NavMap['populatePartitions']>
   ) {
-    Profiling.startTimer("populatePartitions");
+    Profiling.startTimer('populatePartitions');
     const result = super.populatePartitions(...args);
-    Profiling.endTimer("populatePartitions");
+    Profiling.endTimer('populatePartitions');
     return result;
   }
 
-  setActiveFor(value: PlayerObject | null) {
+  setActiveFor(value: RemotePlayer | null) {
     this.activeFor = value;
   }
 
   debug(duration: number) {
     if (!this.activeFor) return;
 
-    const cell = this.getCellByVoxel(this.activeFor.get_pos())!;
+    const origin = this.activeFor.getEyePosition();
+    const front = vector.add(
+      origin,
+      vector.multiply(this.activeFor.getLookDir(), globals.interaction.range)
+    );
+    const raycast = Raycast(origin, front, false, false);
+
+    let pointedPos: Vector3D | null = null;
+    for (const pointedThing of raycast) {
+      pointedPos = pointedThing.above;
+      break;
+    }
+
+    if (!pointedPos) return;
+
+    const cell = this.getCellByVoxel(pointedPos)!;
     const cellPos = cell.getCellPos();
 
     DebugMarker.mark(lerpVector(cell.volume.min, cell.volume.max, 0.5), {
@@ -200,7 +220,7 @@ export class DebugNavMap extends NavMap {
               );
               if (nextComponents.length > 0) {
                 const nametag =
-                  id + "->" + nextComponents.map((c) => c.id).join(",");
+                  id + '->' + nextComponents.map((c) => c.id).join(',');
 
                 const pos = {
                   x:
@@ -229,6 +249,6 @@ export class DebugNavMap extends NavMap {
       Logger.error(e);
     }
 
-    Logger.trace("debug_navmap:", cell.volume);
+    Logger.trace('debug_navmap:', cell.volume);
   }
 }

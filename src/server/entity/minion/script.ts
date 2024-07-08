@@ -251,7 +251,7 @@ export class MinionScript extends EntityScript<MinionProperties> {
     }
 
     const blockRef = this.context.blockManager.getRef(action.operatePos);
-    if (!blockRef || !blockRef.isOperable()) {
+    if (!blockRef || !blockRef.isOperable(this.objRef.get_pos())) {
       return this.endAction();
     }
 
@@ -282,7 +282,8 @@ export class MinionScript extends EntityScript<MinionProperties> {
 
   startDigging(position: Vector3D): void {
     if (!this.collisionInfo.touching_ground) return;
-    if (!WorkerCapabilities.inWorkRange(position, this.objRef.get_pos())) return;
+    if (!WorkerCapabilities.inWorkRange(position, this.objRef.get_pos()))
+      return;
 
     if (
       this._action.type !== MinionAction.Dig ||
@@ -302,7 +303,8 @@ export class MinionScript extends EntityScript<MinionProperties> {
 
   startBuilding(position: Vector3D): void {
     if (!this.collisionInfo.touching_ground) return;
-    if (!WorkerCapabilities.inWorkRange(position, this.objRef.get_pos())) return;
+    if (!WorkerCapabilities.inWorkRange(position, this.objRef.get_pos()))
+      return;
 
     if (
       this._action.type !== MinionAction.Build ||

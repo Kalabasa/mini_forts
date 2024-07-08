@@ -1,19 +1,26 @@
-import { ActionResult } from "server/ai/colony/action_result";
-import { MinionAgent } from "server/ai/colony/minion_agent";
-import { Task } from "server/ai/colony/task";
-import { WorkerCapabilities } from "server/ai/colony/worker_capabilities";
-import { Locomotion } from "server/entity/locomotion/locomotion";
-import { Tasks } from "server/ai/colony/task_helper";
-import { Path } from "server/ai/pathfinder/path";
+import { ActionResult } from 'server/ai/colony/action_result';
+import { MinionAgent } from 'server/ai/colony/minion_agent';
+import { Task } from 'server/ai/colony/task';
+import { WorkerCapabilities } from 'server/ai/colony/worker_capabilities';
+import { Locomotion } from 'server/entity/locomotion/locomotion';
+import { Tasks } from 'server/ai/colony/task_helper';
+import { Path } from 'server/ai/pathfinder/path';
 
 const pathToDestination = Symbol();
 
 export class MoveTask extends Task {
   constructor(
-    readonly destinations: Vector3D[],
+    public destinations: Vector3D[],
     readonly priorityCenter: Vector3D | undefined = undefined
   ) {
     super();
+  }
+
+  protected updateDestinations(destinations: Vector3D[]) {
+    if (destinationsKey(this.destinations) !== destinationsKey(destinations)) {
+      this.destinations = destinations;
+      delete this.memory[pathToDestination];
+    }
   }
 
   override isStrictlyImpossible(): boolean {
@@ -69,4 +76,11 @@ export class MoveTask extends Task {
         : agent.pathfinder.findAnyPath(agentPos, this.destinations);
     });
   }
+}
+
+function destinationsKey(destinations: Vector3D[]) {
+  return destinations
+    .map((d) => `${d.x},${d.y}${d.z}`)
+    .sort()
+    .join(':');
 }

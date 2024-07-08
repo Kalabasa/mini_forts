@@ -4,7 +4,7 @@ import { Entity, EntityDamage } from 'server/entity/entity';
 import { SnailProperties } from 'server/entity/snail/properties';
 import { CountdownTimer } from 'utils/timer';
 
-const hideTime = 2;
+const hideTime = 0.8;
 
 export class SnailScript extends EnemyEntityScript<SnailProperties> {
   private isHiding = false;

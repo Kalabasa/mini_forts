@@ -1,9 +1,7 @@
 import { TaskPriority } from 'server/ai/colony/task';
-import {
-  BlockDefinition,
-  BlockRefInstance
-} from 'server/block/block';
+import { BlockDefinition, BlockRefInstance } from 'server/block/block';
 import { GameContext } from 'server/game/context';
+import { WorkerCapabilities } from 'server/ai/colony/worker_capabilities';
 
 export abstract class Operable<D extends BlockDefinition = BlockDefinition> {
   constructor(
@@ -13,4 +11,7 @@ export abstract class Operable<D extends BlockDefinition = BlockDefinition> {
   ) {}
 
   abstract shouldOperate(): TaskPriority | undefined;
+  getOperatorPositions(): Vector3D[] {
+    return WorkerCapabilities.getOperatePositions(this.position);
+  }
 }

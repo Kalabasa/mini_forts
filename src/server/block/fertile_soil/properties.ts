@@ -12,7 +12,7 @@ const mycelialTexture = tex(fertileSoilPng, '^[sheet:5x1:3,0');
 const exMycelialTexture = tex(fertileSoilPng, '^[sheet:5x1:4,0');
 
 export class FertileSoilProperties extends BlockProperties {
-  override health = 30;
+  override health = 20;
   override digTime = 4;
 
   override physics = {
