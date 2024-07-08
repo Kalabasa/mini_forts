@@ -31,6 +31,8 @@ function create(amount: number, entity: Entity): ParticleDefinition {
   // if (amount === 0) iconTex = blockTexture;
   // if (amount < 0) iconTex = hurtTexture;
 
+  if (!Number.isFinite(amount)) amount = 9999 * (amount > 0 ? 1 : -1);
+
   const numberType = Font.createNumberCombineParts(
     Math.abs(amount),
     amount < 0 ? 'red' : 'default'

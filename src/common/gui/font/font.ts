@@ -21,6 +21,8 @@ function createNumberCombineParts(
   width: number;
   height: number;
 } {
+  if (!Number.isFinite(number)) throw new Error('Invalid number!');
+
   const png = digitsPng[style];
 
   const digitTextures: string[] = [];

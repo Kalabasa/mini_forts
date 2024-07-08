@@ -4,6 +4,7 @@ import { EnemyEntityProperties } from 'server/entity/enemy_entity/enemy_entity';
 import { Faction } from 'server/entity/faction';
 import { PassableNodes } from 'server/entity/locomotion/locomotion';
 import { WalkClimbLocomotion } from 'server/entity/locomotion/walk_climb';
+import { defaultCollisionBox } from 'server/entity/entity';
 
 export class SlugProperties extends EnemyEntityProperties {
   entityName = 'slug';
@@ -58,6 +59,6 @@ export class SlugProperties extends EnemyEntityProperties {
     spritediv: { x: 4, y: 2 },
     physical: true,
     collide_with_objects: false,
-    collisionbox: [-0.3, -0.5, -0.3, 0.3, 0.4, 0.3],
+    collisionbox: defaultCollisionBox,
   };
 }

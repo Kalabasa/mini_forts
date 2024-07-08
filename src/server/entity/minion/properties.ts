@@ -5,6 +5,7 @@ import { Faction } from 'server/entity/faction';
 import { PassableNodes } from 'server/entity/locomotion/locomotion';
 import { WalkClimbLocomotion } from 'server/entity/locomotion/walk_climb';
 import { Resource, ResourceType } from 'server/game/resources';
+import { defaultCollisionBox } from 'server/entity/entity';
 
 const stepSound = {
   sound: snd('minion_step'),
@@ -84,7 +85,7 @@ export class MinionProperties extends EntityProperties {
     spritediv: { x: 5, y: 2 },
     physical: true,
     collide_with_objects: false,
-    collisionbox: [-0.3, -0.45, -0.3, 0.3, 0.45, 0.3],
+    collisionbox: defaultCollisionBox,
   };
 
   override persist(dst: PersistentEntity, src: PersistentEntity) {

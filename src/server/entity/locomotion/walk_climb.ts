@@ -70,10 +70,8 @@ function create({
     if (distH > 1 && delta.y !== 0) return Infinity;
     if (delta.y < -1 || delta.y > 1) return Infinity;
 
-    // if (delta.y > 0 && solidNodeCost(cost)) return Infinity;
-
     if (delta.y !== 0) {
-      if (delta.x === 0 && delta.y === 0) return Infinity;
+      if (delta.x === 0 && delta.z === 0) return Infinity;
 
       const lower = fromOrTo.y < position.y ? fromOrTo : position;
       const higher = fromOrTo.y < position.y ? position : fromOrTo;

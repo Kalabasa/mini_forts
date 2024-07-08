@@ -8,13 +8,13 @@ export function registerCheats(game: Game) {
   minetest.register_chatcommand('add_resource', {
     params: '<type> <amount>',
     func: (name, param) => {
-      const [typeName, amountString] = param.trim().split(' ');
+      const [typeName, amountString] = param.toLowerCase().trim().split(' ');
 
       try {
         const amount = parseInt(amountString);
 
         for (const [key, value] of Object.entries(ResourceType)) {
-          if (typeName.toLowerCase() === key.toLowerCase()) {
+          if (typeName === 'all' || typeName === key.toLowerCase()) {
             game.addResource({ type: value, amount });
             return $multi(true);
           }
@@ -22,6 +22,13 @@ export function registerCheats(game: Game) {
       } catch (e) {}
 
       return $multi(false);
+    },
+  });
+
+  minetest.register_chatcommand('disable_enemies', {
+    func: (name, param) => {
+      game.getDirector().disableEnemies();
+      return $multi(true);
     },
   });
 }

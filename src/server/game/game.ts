@@ -7,6 +7,7 @@ import {
 import { BlockManager, ReadonlyBlockManager } from 'server/block/block_manager';
 import { BlockPhysicsEngine } from 'server/block/block_physics_engine';
 import { CoreCrystalDef } from 'server/block/core_crystal/def';
+import { EnemyEntityScript } from 'server/entity/enemy_entity/enemy_entity';
 import {
   EntityDefinition,
   EntityInstance,
@@ -16,8 +17,11 @@ import { EntityStore } from 'server/entity/entity_store';
 import { GameContext } from 'server/game/context';
 import { Director } from 'server/game/director';
 import {
+  AddEntityEvent,
   AddPlayerEvent,
+  EntityDiedEvent,
   LoadStageHomeEvent,
+  RemoveEntityEvent,
   RemovePlayerEvent,
   UpdateResourcesEvent,
 } from 'server/game/events';
@@ -74,6 +78,25 @@ export class Game implements GameContext {
       if (!this.stageInitialized) {
         this.initStage(event.stage);
         this.stageInitialized = true;
+      }
+    });
+
+    this.events.on(AddEntityEvent, (event) => {
+      if (event.entity instanceof EnemyEntityScript) {
+        this.director.addEnemy(event.entity.id, event.entity);
+      }
+    });
+
+    this.events.on(EntityDiedEvent, (event) => {
+      if (event.entity instanceof EnemyEntityScript) {
+        this.director.removeEnemy(event.entity.id);
+      }
+    });
+
+    this.events.on(RemoveEntityEvent, (event) => {
+      if (!event.entity.alive) return; // dead already handled
+      if (event.entity instanceof EnemyEntityScript) {
+        this.director.removeEnemy(event.entity.id);
       }
     });
   }

@@ -13,24 +13,27 @@ import { SnailDef } from 'server/entity/snail/def';
 import { LoadMapChunkEvent } from 'server/game/events';
 import { Game } from 'server/game/game';
 import { ResourceType } from 'server/game/resources';
+import { ID } from 'utils/id';
 import { Logger } from 'utils/logger';
 import { hypot2, randomInt } from 'utils/math';
 import { IntervalTimer } from 'utils/timer';
 
 const startingResources = {
-  [ResourceType.Wood]: 1000,
-  [ResourceType.Stone]: 1000,
-  [ResourceType.Metal]: 1000,
-  [ResourceType.Spore]: 1000,
+  [ResourceType.Wood]: 200,
+  [ResourceType.Stone]: 200,
+  [ResourceType.Metal]: 200,
+  [ResourceType.Spore]: 200,
 };
 
 const maxEnemyBases = 3;
-const maxEnemyEntities = 9;
+const initialMaxEnemies = 9;
 
 // Gameplay logic
 export class Director {
+  private enemiesDisabled = false;
   private enemyBases: Vector3D[] = [];
-  private enemyEntities: EnemyEntity[] = [];
+  private readonly enemies = new Map<ID, EnemyEntity>();
+  private maxEnemies = initialMaxEnemies;
 
   private eventTimer = new IntervalTimer(10);
 
@@ -42,7 +45,7 @@ export class Director {
     Logger.trace('Resetting Director...');
     this.eventTimer.reset();
     this.enemyBases = [];
-    this.enemyEntities = [];
+    this.enemies.clear();
   }
 
   init(): void {
@@ -55,8 +58,8 @@ export class Director {
     this.game.setBlock(CoreCrystalBaseDef, homeUnderPos);
 
     const initialMinions = [
-      // { x: homePos.x - 1, y: homePos.y, z: homePos.z },
-      // { x: homePos.x + 1, y: homePos.y, z: homePos.z },
+      { x: homePos.x - 1, y: homePos.y, z: homePos.z },
+      { x: homePos.x + 1, y: homePos.y, z: homePos.z },
       { x: homePos.x, y: homePos.y, z: homePos.z + 1 },
     ];
 
@@ -70,9 +73,17 @@ export class Director {
   }
 
   update(dt: number): void {
+    if (this.enemiesDisabled) {
+      for (const enemy of this.enemies.values()) {
+        Logger.trace('Enemies disabled. Killing enemy', enemy);
+        enemy.damage(Infinity);
+      }
+    }
     if (this.eventTimer.updateAndCheck(dt)) {
       this.cleanupEnemyEntities();
-      this.trySpawnEnemy();
+      if (!this.enemiesDisabled) {
+        this.trySpawnEnemy();
+      }
     }
   }
 
@@ -91,8 +102,21 @@ export class Director {
     return this.game.createEntity(MinionDef, denPosition);
   }
 
+  addEnemy(id: ID, enemy: EnemyEntity): void {
+    this.enemies.set(id, enemy);
+  }
+
+  removeEnemy(id: ID): void {
+    this.enemies.delete(id);
+  }
+
+  disableEnemies() {
+    Logger.trace('Disable enemies');
+    this.enemiesDisabled = true;
+  }
+
   private trySpawnEnemy() {
-    if (this.enemyEntities.length >= maxEnemyEntities) return;
+    if (this.enemies.size >= this.maxEnemies) return;
     if (this.enemyBases.length === 0) return;
 
     const type = Math.random() < 0.08 ? SnailDef : SlugDef;
@@ -100,7 +124,7 @@ export class Director {
     const basePos = this.enemyBases[randomInt(0, this.enemyBases.length - 1)];
     const top = { x: basePos.x, y: basePos.y + 1, z: basePos.z };
     const enemy = this.game.createEntity(type, top);
-    this.enemyEntities.push(enemy);
+    this.enemies.set(enemy.id, enemy);
   }
 
   private initWithMap() {
@@ -136,11 +160,9 @@ export class Director {
   }
 
   private cleanupEnemyEntities() {
-    for (let i = this.enemyEntities.length - 1; i >= 0; i--) {
-      const enemy = this.enemyEntities[i];
-
+    for (const enemy of this.enemies.values()) {
       if (!enemy.alive) {
-        this.enemyEntities.splice(i, 1);
+        this.enemies.delete(enemy.id);
       }
     }
   }

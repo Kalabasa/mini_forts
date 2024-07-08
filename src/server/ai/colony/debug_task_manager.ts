@@ -8,6 +8,7 @@ import { IntervalTimer } from "utils/timer";
 
 if (CONFIG.isDev) {
   minetest.register_chatcommand("debug_taskmanager", {
+    params: "<mode>",
     func: (playerName, param) => {
       if (!instance) return $multi(false, "No instance");
 

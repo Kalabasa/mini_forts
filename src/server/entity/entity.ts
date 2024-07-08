@@ -59,6 +59,15 @@ type EntityScriptConstructor<S extends EntityScript> = {
   new (...params: ConstructorParameters<typeof EntityScript>): S;
 };
 
+export const defaultCollisionBox: [
+  number,
+  number,
+  number,
+  number,
+  number,
+  number
+] = [-0.2, -0.45, -0.2, 0.2, 0.4, 0.2];
+
 export abstract class EntityProperties {
   abstract readonly faction: Faction;
 
