@@ -75,10 +75,19 @@ function create({
 
       const lower = fromOrTo.y < position.y ? fromOrTo : position;
       const higher = fromOrTo.y < position.y ? position : fromOrTo;
-      for (let y = lower.y + 1; y <= higher.y; y++) {
-        const between = minetest.get_node({ x: lower.x, y, z: lower.z });
 
-        if (solidNodeCost(nodeCost(between))) return Infinity;
+      for (let y = lower.y; y < higher.y; y++) {
+        // check passable space for climbing
+        const climbPath = minetest.get_node({
+          x: lower.x,
+          y: y + 1,
+          z: lower.z,
+        });
+        if (solidNodeCost(nodeCost(climbPath))) return Infinity;
+
+        // check steady surface for climbing on
+        const surface = minetest.get_node({ x: higher.x, y, z: higher.z });
+        if (passableNodeCost(nodeCost(surface))) return Infinity;
       }
     }
 
@@ -104,8 +113,9 @@ function create({
       const entityPos = entity.objRef.get_pos();
       const delta =
         targetLocation && vector.subtract(targetLocation, entityPos);
+      const deltaH = delta && { x: delta.x, y: 0, z: delta.z };
 
-      if (!delta || vector.length(delta) < walkSpeed * dt * 0.75) {
+      if (!delta || !deltaH || vector.length(deltaH) < walkSpeed * dt * 0.75) {
         if (collisionInfo.touching_ground) {
           if (
             entity.animation === animationMap.walk ||
@@ -122,7 +132,6 @@ function create({
         return;
       }
 
-      const deltaH = delta && { x: delta.x, y: 0, z: delta.z };
       const dirH = vector.normalize(deltaH);
 
       let climbCollision: NodeCollision | undefined;

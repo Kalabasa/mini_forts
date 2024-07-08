@@ -30,13 +30,17 @@ function followPath(path: Path, entity: Entity): ActionResult {
       entity.targetLocation = undefined;
       return ActionResult.Done;
     }
-  } else if (
-    entity.locomotion.moveCost(next, entity.getVoxelPosition()) < Infinity
-  ) {
-    entity.targetLocation = next;
-    return ActionResult.Ongoing;
   } else {
-    entity.targetLocation = undefined;
-    return ActionResult.Stopped;
+    const pos = entity.getVoxelPosition();
+    if (
+      (pos.x === next.x && pos.z === next.z && pos.y > next.y) ||
+      entity.locomotion.moveCost(next, pos) < Infinity
+    ) {
+      entity.targetLocation = next;
+      return ActionResult.Ongoing;
+    } else {
+      entity.targetLocation = undefined;
+      return ActionResult.Stopped;
+    }
   }
 }

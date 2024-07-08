@@ -66,7 +66,7 @@ export const defaultCollisionBox: [
   number,
   number,
   number
-] = [-0.2, -0.45, -0.2, 0.2, 0.4, 0.2];
+] = [-0.3, -0.5, -0.3, 0.3, 0.4, 0.3];
 
 export abstract class EntityProperties {
   abstract readonly faction: Faction;
@@ -249,22 +249,22 @@ export class EntityScript<P extends EntityProperties = EntityProperties> {
     }
   }
 
-  set targetLocation(value: Vector3D | undefined) {
-    if (value == undefined) {
+  set targetLocation(voxel: Vector3D | undefined) {
+    if (voxel == undefined) {
       this.voxelTargetLocation = undefined;
       this.preciseTargetLocation = undefined;
     } else if (
       this.voxelTargetLocation == undefined ||
-      !equalVectors(this.voxelTargetLocation, value)
+      !equalVectors(this.voxelTargetLocation, voxel)
     ) {
-      this.voxelTargetLocation = value;
+      this.voxelTargetLocation = voxel;
 
       const collisionBox = this.objRef.get_properties().collisionbox;
 
       this.preciseTargetLocation = {
-        x: value.x - (collisionBox[0] + collisionBox[3]) * 0.5,
-        y: value.y + collisionBox[4] - 0.5,
-        z: value.z - (collisionBox[2] + collisionBox[5]) * 0.5,
+        x: voxel.x - (collisionBox[0] + collisionBox[3]) * 0.5,
+        y: voxel.y + collisionBox[4] - 0.5,
+        z: voxel.z - (collisionBox[2] + collisionBox[5]) * 0.5,
       };
     }
   }
