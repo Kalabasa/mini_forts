@@ -4,7 +4,7 @@ import { Entity, EntityDamage } from 'server/entity/entity';
 import { SnailProperties } from 'server/entity/snail/properties';
 import { CountdownTimer } from 'utils/timer';
 
-const hideTime = 0.8;
+const hideTime = 0.7;
 
 export class SnailScript extends EnemyEntityScript<SnailProperties> {
   private isHiding = false;
@@ -15,7 +15,7 @@ export class SnailScript extends EnemyEntityScript<SnailProperties> {
 
     if (this.collisionInfo.touching_ground) {
       if (this.isHiding) {
-        if (hideTimeout && Math.random() < 0.04) {
+        if (hideTimeout && Math.random() < 0.07) {
           this.unhide();
         }
         return;
@@ -46,8 +46,8 @@ export class SnailScript extends EnemyEntityScript<SnailProperties> {
 
   override onDamage(damage: EntityDamage) {
     if (this.isHiding) {
-      if (this.hideTimer.count + 0.5 >= this.hideTimer.seconds) {
-        this.hideTimer.reset(0.5);
+      if (this.hideTimer.count + 0.3 >= this.hideTimer.seconds) {
+        this.hideTimer.reset(0.3);
       }
 
       damage.reduce(damage.amount);
