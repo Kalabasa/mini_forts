@@ -81,9 +81,9 @@ function canSupport(
   }
 }
 
-function getNodeSupport(
+export function getNodeSupport(
   node: Node | undefined,
-  includeGhosts: boolean
+  includeGhosts: boolean = false
 ): BlockTag.Code<'PhysicsSupport'> | undefined {
   if (!node) return undefined;
 

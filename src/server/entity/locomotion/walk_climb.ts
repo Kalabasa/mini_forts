@@ -1,3 +1,6 @@
+import { getNodeDef } from 'common/block/get_node_def';
+import { getNodeSupport } from 'common/block/physics';
+import { BlockTag } from 'common/block/tag';
 import { Animation } from 'server/entity/animation';
 import { Entity } from 'server/entity/entity';
 import { Locomotion, PassableNodes } from 'server/entity/locomotion/locomotion';
@@ -59,7 +62,11 @@ function create({
       z: position.z,
     });
 
+    // can't walk on non-solid block
     if (!solidNodeCost(nodeCost(under))) return Infinity;
+
+    // can't walk on non-supporting block
+    if (getNodeSupport(under) !== BlockTag.PhysicsSupportAll) return Infinity;
 
     if (!fromOrTo) return cost;
 
