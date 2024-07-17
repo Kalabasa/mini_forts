@@ -6,6 +6,7 @@ import { DenDef } from 'server/block/den/def';
 import { EnemyCrystalDef } from 'server/block/enemy_crystal/def';
 import { EnemyCrystalBaseDef } from 'server/block/enemy_crystal_base/def';
 import { EnemyEntity } from 'server/entity/enemy_entity/enemy_entity';
+import { Locomotion } from 'server/entity/locomotion/locomotion';
 import { MinionDef } from 'server/entity/minion/def';
 import { MinionScript } from 'server/entity/minion/script';
 import { SlugDef } from 'server/entity/slug/def';
@@ -122,8 +123,31 @@ export class Director {
     const type = Math.random() < 0.08 ? SnailDef : SlugDef;
 
     const basePos = this.enemyBases[randomInt(0, this.enemyBases.length - 1)];
-    const top = { x: basePos.x, y: basePos.y + 1, z: basePos.z };
-    const enemy = this.game.createEntity(type, top);
+
+    const possibleLocations: Vector3D[] = [];
+    for (let x = -1; x <= 1; x++) {
+      for (let z = -1; z <= 1; z++) {
+        if (x !== 0 && z !== 0) {
+          const pos = vector.add(basePos, { x, y: 0, z });
+          const under = vector.add(basePos, { x, y: -1, z });
+          if (
+            !Locomotion.solidNodeCost(
+              type.properties.locomotion.moveCost(pos)
+            ) &&
+            Locomotion.solidNodeCost(type.properties.locomotion.moveCost(under))
+          ) {
+            possibleLocations.push(pos);
+          }
+        }
+      }
+    }
+
+    if (possibleLocations.length === 0) return;
+
+    const enemy = this.game.createEntity(
+      type,
+      possibleLocations[randomInt(0, possibleLocations.length - 1)]
+    );
     this.enemies.set(enemy.id, enemy);
   }
 
@@ -155,6 +179,13 @@ export class Director {
 
     const baseUnderPos = vector.add(baseSpawnPos, { x: 0, y: -1, z: 0 });
 
+    for (let x = -1; x <= 1; x++) {
+      for (let y = 0; y <= 1; y++) {
+        for (let z = -1; z <= 1; z++) {
+          minetest.remove_node(vector.add(baseSpawnPos, { x, y, z }));
+        }
+      }
+    }
     this.game.setBlock(EnemyCrystalDef, baseSpawnPos);
     this.game.setBlock(EnemyCrystalBaseDef, baseUnderPos);
   }
