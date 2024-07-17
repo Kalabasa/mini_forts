@@ -176,7 +176,14 @@ export class BallistaHeadScript extends BlockEntityScript<BallistaHeadProperties
       return false;
     }
 
-    const raycast = Raycast(origin, target, false, false);
+    const dir = vector.direction(origin, target);
+
+    // fire arrow from tip
+    const tip = vector.new(origin);
+    tip.x += dir.x * 0.55;
+    tip.y += dir.y * 0.55;
+
+    const raycast = Raycast(tip, target, false, false);
 
     for (const pointed of raycast) {
       if (!equalVectors(origin, pointed.under)) {
@@ -186,7 +193,7 @@ export class BallistaHeadScript extends BlockEntityScript<BallistaHeadProperties
 
           if (IsNode.solid(nodeAbove)) return false;
 
-          const dir = vector.direction(origin, target);
+          // can phase through 0.25 thick walls
           const forward = {
             x: Math.round(pointed.intersection_point.x + dir.x * 0.25),
             y: Math.round(pointed.intersection_point.y + dir.y * 0.25),
