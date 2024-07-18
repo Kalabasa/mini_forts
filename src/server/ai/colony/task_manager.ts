@@ -241,9 +241,10 @@ export class TaskManager {
 
         const cost = task.estimateCost(agent as MinionAgent);
         Logger.trace('Cost estimation:');
-        Logger.trace('  ', agent);
-        Logger.trace('  ', task);
-        Logger.trace('  ', cost);
+        Logger.trace(' ', agent);
+        Logger.trace(' ', task);
+        Logger.trace('    isStrictlyImpossible?', task.isStrictlyImpossible());
+        Logger.trace(' ', cost);
 
         // place costs in the matrix
         const index = i + j * stride;

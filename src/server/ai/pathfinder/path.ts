@@ -1,9 +1,9 @@
-import { NavComponent, NavMap } from "server/ai/pathfinder/nav_map";
-import { Locomotion } from "server/entity/locomotion/locomotion";
-import { throwError } from "utils/error";
-import { Logger } from "utils/logger";
-import { equalVectors, lerpVector, sqDist } from "utils/math";
-import { PriorityQueue } from "utils/priority_queue";
+import { NavComponent, NavMap } from 'server/ai/pathfinder/nav_map';
+import { Locomotion } from 'server/entity/locomotion/locomotion';
+import { throwError } from 'utils/error';
+import { Logger } from 'utils/logger';
+import { equalVectors, lerpVector, sqDist } from 'utils/math';
+import { PriorityQueue } from 'utils/priority_queue';
 
 export type PathNode = {
   position: Vector3D;
@@ -77,7 +77,11 @@ export class FindPath implements Path {
         let reachable: boolean | undefined;
         for (const dst of this.destinations) {
           const dstComp = this.navMap.findComponent(dst.pos);
-          if (dstComp && dstComp.partition && srcComp.partition) {
+          if (
+            dstComp &&
+            dstComp.partition != null &&
+            srcComp.partition != null
+          ) {
             reachable = dstComp.partition === srcComp.partition;
             if (reachable) break;
           }
@@ -177,7 +181,7 @@ export class FindPath implements Path {
       );
       this.partialPathIndex = 0;
     } else {
-      throwError("Pathfinder: No more steps!");
+      throwError('Pathfinder: No more steps!');
     }
   }
 
@@ -207,7 +211,7 @@ export class FindPath implements Path {
 
   protected searchCoarsePath(source: Vector3D, destinations: Destination[]) {
     if (destinations.length === 0) {
-      throwError("Pathfinder: Empty destinations array!");
+      throwError('Pathfinder: Empty destinations array!');
     }
 
     const srcComp = this.navMap.findComponent(source);
@@ -252,7 +256,7 @@ export class FindPath implements Path {
 
     const visited = new Map<string, CoarsePathNode>();
     const open = new PriorityQueue<CoarsePathNode>({
-      property: "value",
+      property: 'value',
       ascending: true,
     });
 
@@ -269,7 +273,7 @@ export class FindPath implements Path {
     while (open.size > 0) {
       if (open.size > 700) {
         Logger.error(
-          "Pathfinder: Too many nodes! (coarse)",
+          'Pathfinder: Too many nodes! (coarse)',
           source,
           destinations
         );
@@ -283,7 +287,10 @@ export class FindPath implements Path {
         current.component.cell === srcComp.cell &&
         current.component.id === srcComp.id
       ) {
-        const partition = srcComp.partition || current.component.partition;
+        const partition =
+          srcComp.partition != null
+            ? srcComp.partition
+            : current.component.partition;
 
         const path: CoarsePathNode[] = [];
         let cursor: CoarsePathNode | undefined = current;
@@ -301,8 +308,8 @@ export class FindPath implements Path {
       do {
         // Is somewhere unreachable from source
         if (
-          srcComp.partition &&
-          current.component.partition &&
+          srcComp.partition != null &&
+          current.component.partition != null &&
           srcComp.partition !== current.component.partition
         ) {
           break; // continue
@@ -346,6 +353,7 @@ export class FindPath implements Path {
             open.add(nextNode);
           }
         }
+        // eslint-disable-next-line no-constant-condition
       } while (false);
     }
 
@@ -359,7 +367,7 @@ export class FindPath implements Path {
     coarseDestination?: CoarsePathNode
   ): PathNode[] | undefined {
     if (destinations.length === 0 && !coarseDestination) {
-      throwError("Pathfinder: Empty destinations array!");
+      throwError('Pathfinder: Empty destinations array!');
     }
 
     const srcComp =
@@ -389,7 +397,7 @@ export class FindPath implements Path {
 
     const visited = new Map<string, PathNode>();
     const open = new PriorityQueue<PathNode>({
-      property: "value",
+      property: 'value',
       ascending: true,
     });
     open.add(sourceNode);
@@ -397,7 +405,7 @@ export class FindPath implements Path {
     while (open.size > 0) {
       if (open.size > 300) {
         Logger.error(
-          "Pathfinder: Too many nodes! (voxel)",
+          'Pathfinder: Too many nodes! (voxel)',
           source,
           destinations
         );

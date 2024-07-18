@@ -133,7 +133,7 @@ export class NavMap {
 
   populatePartitions(start: Vector3D): void {
     const comp = this.findComponent(start);
-    if (!comp || comp.partition) return;
+    if (!comp || comp.partition != null) return;
     this.computePartitions([comp], true);
   }
 
@@ -168,7 +168,7 @@ export class NavMap {
         const comp = current.comp;
         if (comp.partition !== current.partition) {
           // resolve frontier intersections
-          if (comp.partition) {
+          if (comp.partition != null) {
             if (frontiers[comp.partition]) {
               // frontier intersection, only one should remain
               if (frontiers[comp.partition].active) {
@@ -297,7 +297,7 @@ export class NavCell {
     if (!this.scanned) {
       const ids = this.scan();
       const id = ids[this.volume.index(position.x, position.y, position.z)];
-      return id ? this.components.get(id) : undefined;
+      return id != null ? this.components.get(id) : undefined;
     }
 
     const { locomotion } = this.map;
@@ -347,7 +347,7 @@ export class NavCell {
     const { adjacentNodes, moveCost } = locomotion;
 
     const oppositeDir = findOppositeDirection(direction, adjacentNodes);
-    if (!oppositeDir) return;
+    if (oppositeDir == null) return;
 
     if (!this.scanned) {
       this.scan();
@@ -390,9 +390,9 @@ export class NavCell {
             ) {
               // fixme: allow usage in invalidatePartitions without throwing
               // spread partition numbers
-              // if (component.partition) {
+              // if (component.partition != null) {
               //   if (
-              //     nextComp.partition &&
+              //     nextComp.partition != null &&
               //     nextComp.partition !== component.partition
               //   ) {
               //     throwError(
@@ -527,7 +527,7 @@ export class NavCell {
         const voxelPortals = portals[index];
         for (let dir = 0; dir < adjacentNodes.length; dir++) {
           let link = component.links[dir];
-          if (!link) {
+          if (link == null) {
             link = { cachedComps: undefined, portals: [] };
             component.links[dir] = link;
           }

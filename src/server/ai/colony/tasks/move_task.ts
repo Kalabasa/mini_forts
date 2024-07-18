@@ -5,6 +5,7 @@ import { WorkerCapabilities } from 'server/ai/colony/worker_capabilities';
 import { Locomotion } from 'server/entity/locomotion/locomotion';
 import { Tasks } from 'server/ai/colony/task_helper';
 import { Path } from 'server/ai/pathfinder/path';
+import { Logger } from 'utils/logger';
 
 const pathToDestination = Symbol();
 

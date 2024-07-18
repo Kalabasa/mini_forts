@@ -46,7 +46,7 @@ export function registerDebugPath(
 
   let checkPathPlayer: Player | undefined = undefined;
   let checkPathStart: Vector3D | undefined = undefined;
-  let checkPath: Path | undefined = undefined;
+  let checkPath: DebugPath | undefined = undefined;
 
   minetest.register_chatcommand('check_path_start', {
     func: (playerName) => {
@@ -85,7 +85,7 @@ export function registerDebugPath(
         return $multi(false, 'No pointed location');
       }
 
-      checkPath = pathfinder.findPath(checkPathStart, end);
+      checkPath = pathfinder.findPath(checkPathStart, end) as DebugPath;
       return $multi(true, `Check path: ${checkPath.exists()}`);
     },
   });
@@ -126,11 +126,16 @@ export function registerDebugPath(
     }
 
     if (checkPath && checkPathPlayer) {
+      checkPath.render();
       const step = checkPath.getStep();
       if (step) {
         const pointed = getPointedNodeAbove(checkPathPlayer);
         if (pointed && equalVectors(step, pointed)) {
-          checkPath.advance();
+          if (checkPath.hasNext()) {
+            checkPath.advance();
+          } else {
+            checkPath = undefined;
+          }
         }
       }
     }
