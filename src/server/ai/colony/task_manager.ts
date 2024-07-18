@@ -183,7 +183,7 @@ export class TaskManager {
         break;
       }
 
-      const agents = [...this.freeAgents];
+      const agents = [...this.freeAgents.values()];
       const unassignedTasks = this.unassignedTasks[priority];
 
       if (unassignedTasks.size < buildupLimit) {
@@ -240,6 +240,10 @@ export class TaskManager {
         const agent = agents[i];
 
         const cost = task.estimateCost(agent as MinionAgent);
+        Logger.trace('Cost estimation:');
+        Logger.trace('  ', agent);
+        Logger.trace('  ', task);
+        Logger.trace('  ', cost);
 
         // place costs in the matrix
         const index = i + j * stride;
@@ -257,6 +261,8 @@ export class TaskManager {
       }
     }
 
+    this.traceBuffer('Costs');
+
     // DP: Each cell will become a score
     // In the resulting matrix, the higher cell score would be the better agent-task combination
     for (let j = 0; j < tasksLen; j++) {
@@ -269,6 +275,8 @@ export class TaskManager {
           this.buffer[index];
       }
     }
+
+    this.traceBuffer('DP');
 
     // find best agent-task combinations
     // the sum row and column will become a "marker" for spent agents or tasks
@@ -318,25 +326,29 @@ export class TaskManager {
       this.assign(bestAgent, bestTask);
     }
 
-    Logger.trace('TaskManager: Task matrix');
-    const infinite = { [Logger.String]: () => '∞' };
-    for (let j = 0; j < tasksLen; j++) {
-      const row: any[] = [];
-      for (let i = 0; i < agentsLen; i++) {
-        const score = this.buffer[i + j * stride];
-        row.push(Number.isFinite(score) ? score : infinite);
-      }
-      Logger.trace('  ', row);
-    }
+    this.traceBuffer('End');
+
     Logger.trace('Task distribution end.');
   }
 
-  private initBuffer(width: number, height: number) {
-    const length = width * height;
-    if (this.buffer.length < length) {
-      this.buffer.length = length;
-      this.bufferStride = width;
+  private traceBuffer(message: string) {
+    Logger.trace(`TaskManager: Task matrix - ${message}`);
+    const negInf = { [Logger.String]: () => '∞' };
+    const posInf = { [Logger.String]: () => '∞' };
+    let row: any[] = [];
+    for (let i = 0; i < this.buffer.length; i++) {
+      const score = this.buffer[i];
+      row.push(Number.isFinite(score) ? score : score < 0 ? negInf : posInf);
+      if (row.length === this.bufferStride) {
+        Logger.trace('  ', row);
+        row.length = 0;
+      }
     }
+  }
+
+  private initBuffer(width: number, height: number) {
+    this.bufferStride = width;
+    this.buffer.length = width * height;
     for (let i = 0; i < width; i++) {
       for (let j = 0; j < height; j++) {
         this.buffer[i + j * this.bufferStride] = 0;

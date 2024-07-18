@@ -13,12 +13,14 @@ export function registerCheats(game: Game) {
       try {
         const amount = parseInt(amountString);
 
+        let added = false;
         for (const [key, value] of Object.entries(ResourceType)) {
           if (typeName === 'all' || typeName === key.toLowerCase()) {
             game.addResource({ type: value, amount });
-            return $multi(true);
+            added = true;
           }
         }
+        if (added) return $multi(true);
       } catch (e) {}
 
       return $multi(false);

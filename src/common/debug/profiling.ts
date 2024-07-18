@@ -19,7 +19,7 @@ function noop() {}
 const timerStarts: Record<string, number> = {};
 const timerStats: Record<string, { count: number; average: number }> = {};
 
-const timerStatReportCooldown = 500_000;
+const timerStatReportCooldown = 20 * 1_000_000; // microseconds
 let timerStatReportEnqueued = false;
 let timerStatReportTime = 0;
 
@@ -51,7 +51,7 @@ function reportTimerStats(label: string) {
     timerStatReportEnqueued = false;
   } else if (!timerStatReportEnqueued) {
     timerStatReportEnqueued = true;
-    minetest.after(timerStatReportCooldown / 1000000, () =>
+    minetest.after(timerStatReportCooldown / 1_000_000, () =>
       reportTimerStats(label)
     );
   }

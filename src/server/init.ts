@@ -1,4 +1,6 @@
 import { ColonyAI } from 'server/ai/colony/colony_ai';
+import { registerDebugNavMap } from 'server/ai/pathfinder/debug_nav_map';
+import { registerDebugPath } from 'server/ai/pathfinder/debug_path';
 import { BlockManager } from 'server/block/block_manager';
 import { registerDebugPointed } from 'server/debug/debug_pointed';
 import { EntityStore } from 'server/entity/entity_store';
@@ -18,7 +20,8 @@ import { World } from 'server/world/world';
 import { CONFIG } from 'utils/config';
 import { Logger } from 'utils/logger';
 import { seedRandom } from 'utils/math';
-import { registerDebugNavMap } from 'server/ai/pathfinder/debug_nav_map';
+import { Pathfinder } from 'server/ai/pathfinder/pathfinder';
+import { MinionDef } from 'server/entity/minion/def';
 
 Logger.info('=============================');
 Logger.info('||        MiniForts        ||');
@@ -49,5 +52,6 @@ registerGame(game);
 registerCheats(game);
 registerDebugPointed(game);
 registerDebugNavMap(game);
+registerDebugPath(game, Pathfinder.get(game, MinionDef.properties.locomotion));
 
 Logger.info('Init done!');

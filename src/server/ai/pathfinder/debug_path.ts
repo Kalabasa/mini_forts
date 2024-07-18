@@ -1,12 +1,19 @@
 import { Profiling } from 'common/debug/profiling';
-import { FindPath } from 'server/ai/pathfinder/path';
+import { globals } from 'common/globals';
+import { Player } from 'common/player/player';
+import { FindPath, Path } from 'server/ai/pathfinder/path';
 import { DebugMarker } from 'server/debug/debug_marker';
-import { CONFIG } from 'utils/config';
+import { Game } from 'server/game/game';
 import { Logger } from 'utils/logger';
-import { lerpVector } from 'utils/math';
+import { equalVectors, lerpVector } from 'utils/math';
 import { WeakRef } from 'utils/weak_ref';
 
-if (CONFIG.isDev) {
+const renderInterval = 0.5;
+
+export function registerDebugPath(
+  game: Game,
+  pathfinder: { findPath(start: Vector3D, end: Vector3D): Path }
+) {
   minetest.register_chatcommand('debug_path', {
     params: '<name>',
     func: (playerName, param) => {
@@ -36,25 +43,99 @@ if (CONFIG.isDev) {
       return $multi(true);
     },
   });
-}
 
-const renderInterval = 0.5;
+  let checkPathPlayer: Player | undefined = undefined;
+  let checkPathStart: Vector3D | undefined = undefined;
+  let checkPath: Path | undefined = undefined;
 
-let time = 0;
-minetest.register_globalstep((dt: number) => {
-  time += dt;
-  for (const ref of instances.values()) {
-    const instance = ref?.deref();
-    if (instance) {
-      if (instance.debugEnabled) {
-        if (time >= instance.lastRenderTime + renderInterval) {
-          instance.lastRenderTime = time;
-          instance.render();
+  minetest.register_chatcommand('check_path_start', {
+    func: (playerName) => {
+      checkPathPlayer = game.findPlayerByName(playerName);
+
+      if (!checkPathPlayer) {
+        return $multi(false, 'No player');
+      }
+
+      checkPathStart = getPointedNodeAbove(checkPathPlayer);
+
+      if (!checkPathStart) {
+        return $multi(false, 'No pointed location');
+      }
+
+      return $multi(
+        true,
+        `Check path start set: (${checkPathStart.x}, ${checkPathStart.y}, ${checkPathStart.z})`
+      );
+    },
+  });
+
+  minetest.register_chatcommand('check_path_end', {
+    func: (playerName) => {
+      if (!checkPathStart) {
+        return $multi(false, 'Issue /check_path_start first!');
+      }
+
+      if (!checkPathPlayer) {
+        return $multi(false, 'No player');
+      }
+
+      const end = getPointedNodeAbove(checkPathPlayer);
+
+      if (!end) {
+        return $multi(false, 'No pointed location');
+      }
+
+      checkPath = pathfinder.findPath(checkPathStart, end);
+      return $multi(true, `Check path: ${checkPath.exists()}`);
+    },
+  });
+
+  minetest.register_chatcommand('check_path_reset', {
+    func: (playerName) => {
+      checkPathStart = undefined;
+      checkPath = undefined;
+      return $multi(true);
+    },
+  });
+
+  function getPointedNodeAbove(player: Player) {
+    const origin = player.getEyePosition();
+    const front = vector.add(
+      origin,
+      vector.multiply(player.getLookDir(), globals.interaction.range)
+    );
+    for (const pointedThing of Raycast(origin, front, false, false)) {
+      return pointedThing.above;
+    }
+  }
+
+  let time = 0;
+  minetest.register_globalstep((dt: number) => {
+    time += dt;
+
+    for (const ref of instances.values()) {
+      const instance = ref?.deref();
+      if (instance) {
+        if (instance.debugEnabled) {
+          if (time >= instance.lastRenderTime + renderInterval) {
+            instance.lastRenderTime = time;
+            instance.render();
+          }
         }
       }
     }
-  }
-});
+
+    if (checkPath && checkPathPlayer) {
+      const step = checkPath.getStep();
+      if (step) {
+        const pointed = getPointedNodeAbove(checkPathPlayer);
+        if (pointed && equalVectors(step, pointed)) {
+          checkPath.advance();
+        }
+      }
+    }
+  });
+}
 
 let instanceNumber = 0;
 const instances = new Map<string, WeakRef<DebugPath>>();
