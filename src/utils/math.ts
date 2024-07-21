@@ -30,11 +30,6 @@ export function px16Box(
   ];
 }
 
-// because the built-in implementation is ???
-vector.length = function (v: Vector3D) {
-  return Math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
-};
-
 export function vectorFloorDiv(v: Vector3D, d: number): Vector3D {
   return {
     x: floorDiv(v.x, d),

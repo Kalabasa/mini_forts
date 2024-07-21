@@ -45,7 +45,6 @@ describe('space', () => {
 
     it('iterates over positions', () => {
       const volume = new Volume({ x: 0, y: 0, z: 0 }, { x: 1, y: 3, z: 3 });
-      let trueIndex = 0;
       let trueX = 0;
       let trueY = 0;
       let trueZ = 0;
@@ -53,7 +52,6 @@ describe('space', () => {
         expect(pos).toEqual({ x: trueX, y: trueY, z: trueZ });
         expect(i).toBe(volume.index(pos.x, pos.y, pos.z));
 
-        trueIndex++;
         trueX++;
         if (trueX > 1) {
           trueX = 0;
@@ -69,7 +67,7 @@ describe('space', () => {
     it('iterates over xz-slices', () => {
       const volume = new Volume({ x: 0, y: 0, z: 0 }, { x: 1, y: 1, z: 2 });
 
-      const columns = [];
+      const columns: [Vector3D, Vector3D][] = [];
       volume.forEachSlice({ x: 1, z: 1 }, (slice) =>
         columns.push([{ ...slice.min }, { ...slice.max }])
       );
@@ -105,7 +103,7 @@ describe('space', () => {
     it('iterates over y-slices', () => {
       const volume = new Volume({ x: 0, y: 0, z: 0 }, { x: 1, y: 2, z: 2 });
 
-      const planes = [];
+      const planes: [Vector3D, Vector3D][] = [];
       volume.forEachSlice({ y: 1 }, (slice) =>
         planes.push([{ ...slice.min }, { ...slice.max }])
       );
@@ -129,7 +127,7 @@ describe('space', () => {
     it('iterates over 1-cell slices', () => {
       const volume = new Volume({ x: 0, y: 0, z: 0 }, { x: 1, y: 1, z: 1 });
 
-      const cells = [];
+      const cells: [Vector3D, Vector3D][] = [];
       volume.forEachSlice({ x: 1, y: 1, z: 1 }, (slice) =>
         cells.push([{ ...slice.min }, { ...slice.max }])
       );
@@ -206,14 +204,12 @@ describe('space', () => {
 
     it('iterates over positions', () => {
       const area = new Area({ x: 0, y: 0 }, { x: 1, y: 3 });
-      let trueIndex = 0;
       let trueX = 0;
       let trueY = 0;
       area.forEach((pos, i) => {
         expect(pos).toEqual({ x: trueX, y: trueY });
         expect(i).toBe(area.index(pos.x, pos.y));
 
-        trueIndex++;
         trueX++;
         if (trueX > 1) {
           trueX = 0;
@@ -225,7 +221,7 @@ describe('space', () => {
     it('iterates over x-slices', () => {
       const area = new Area({ x: 0, y: 0 }, { x: 1, y: 1 });
 
-      const slices = [];
+      const slices: [Vector2D, Vector2D][] = [];
       area.forEachSlice({ x: 1 }, (slice) =>
         slices.push([{ ...slice.min }, { ...slice.max }])
       );
@@ -245,7 +241,7 @@ describe('space', () => {
     it('iterates over y-slices', () => {
       const area = new Area({ x: 0, y: 0 }, { x: 1, y: 2 });
 
-      const slices = [];
+      const slices: [Vector2D, Vector2D][] = [];
       area.forEachSlice({ y: 1 }, (slice) =>
         slices.push([{ ...slice.min }, { ...slice.max }])
       );
@@ -269,7 +265,7 @@ describe('space', () => {
     it('iterates over 1-cell slices', () => {
       const area = new Area({ x: 0, y: 0 }, { x: 1, y: 1 });
 
-      const squares = [];
+      const squares: [Vector2D, Vector2D][] = [];
       area.forEachSlice({ x: 1, y: 1 }, (slice) =>
         squares.push([{ ...slice.min }, { ...slice.max }])
       );
