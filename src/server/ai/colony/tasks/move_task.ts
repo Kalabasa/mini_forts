@@ -4,6 +4,7 @@ import { Task } from 'server/ai/colony/task';
 import { Tasks } from 'server/ai/colony/task_helper';
 import { WorkerCapabilities } from 'server/ai/colony/worker_capabilities';
 import { Path } from 'server/ai/pathfinder/path';
+import { Paths } from 'server/ai/pathfinder/path_helper';
 import { Locomotion } from 'server/entity/locomotion/locomotion';
 
 const pathToDestination = Symbol();
@@ -57,8 +58,9 @@ export class MoveTask extends Task {
   }
 
   getPath(agent: MinionAgent): Path {
-    return Tasks.remember(this, pathToDestination, () => {
-      const agentPos = agent.getVoxelPosition();
+    const agentPos = agent.getVoxelPosition();
+
+    const path = Tasks.remember(this, pathToDestination, () => {
       return this.priorityCenter
         ? agent.pathfinder.findPriorityPath(
             agentPos,
@@ -70,6 +72,13 @@ export class MoveTask extends Task {
           )
         : agent.pathfinder.findAnyPath(agentPos, this.destinations);
     });
+
+    // if path is stale
+    if (!Paths.followablePath(path, agentPos, agent.locomotion)) {
+      path.restart(agentPos);
+    }
+
+    return path;
   }
 }
 

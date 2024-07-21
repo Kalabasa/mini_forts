@@ -1,10 +1,24 @@
 import { ActionResult } from 'server/ai/colony/action_result';
 import { Path } from 'server/ai/pathfinder/path';
 import { Entity } from 'server/entity/entity';
+import { Locomotion } from 'server/entity/locomotion/locomotion';
 
 export const Paths = {
+  followablePath,
   followPath,
 };
+
+function followablePath(
+  path: Path,
+  from: Vector3D,
+  locomotion: Locomotion
+): boolean {
+  return [path.getSource(), path.getStep()]
+    .filter((p): p is NonNullable<typeof p> => p != null)
+    .every((pathPos) => {
+      return steppable(from, pathPos, locomotion);
+    });
+}
 
 function followPath(path: Path, entity: Entity): ActionResult {
   if (!path.exists()) {
@@ -32,10 +46,7 @@ function followPath(path: Path, entity: Entity): ActionResult {
     }
   } else {
     const pos = entity.getVoxelPosition();
-    if (
-      (pos.x === next.x && pos.z === next.z && pos.y > next.y) ||
-      entity.locomotion.moveCost(next, pos) < Infinity
-    ) {
+    if (steppable(pos, next, entity.locomotion)) {
       entity.targetLocation = next;
       return ActionResult.Ongoing;
     } else {
@@ -43,4 +54,17 @@ function followPath(path: Path, entity: Entity): ActionResult {
       return ActionResult.Stopped;
     }
   }
+}
+
+function steppable(
+  entityPos: Vector3D,
+  nextStep: Vector3D,
+  locomotion: Locomotion
+) {
+  return (
+    (entityPos.x === nextStep.x &&
+      entityPos.z === nextStep.z &&
+      entityPos.y > nextStep.y) ||
+    locomotion.moveCost(nextStep, entityPos) < Infinity
+  );
 }

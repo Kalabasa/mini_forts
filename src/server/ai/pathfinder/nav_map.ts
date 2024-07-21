@@ -86,17 +86,6 @@ export class NavMap {
     }
   }
 
-  // fixme: doesn't break up partitions when split
-  //   e.g. with initial nodes:
-  //        0 - 0 - 0 - 0 - 0
-  //   Cut the middle connecting node (splitting the world in half):
-  //        0 - 0       0 - 0
-  //   Invalidate region:
-  //        0 - nil   nil - 0
-  //   Propagate partition numbers:
-  //        0 - 0       0 - 0
-  //   Expected
-  //        0 - 0       1 - 1
   invalidateRegion(minPos: Vector3D, maxPos: Vector3D) {
     const minCell = vectorFloorDiv(minPos, cellSize);
     const maxCell = {
@@ -145,10 +134,29 @@ export class NavMap {
   populatePartitions(start: Vector3D): void {
     const comp = this.findComponent(start);
     if (!comp || comp.partition != null) return;
-    this.computePartitions([comp], true);
+    this.recomputePartitions([comp], true);
   }
 
-  private computePartitions(
+  // If two components with the same partition number
+  // have been found to be actually mutually unreachable,
+  // call this to recompute partitions.
+  // This can happen because invalidateRegion() only affects local cells.
+  // Either fix invalidateRegion() to work recursively (expensive!), or fix stale partitions as we go.
+  recomputePartitionsFromUnreachable(a: NavComponent, b: NavComponent): void {
+    if (a.partition == null || b.partition == null) return;
+    if (a.partition !== b.partition) return;
+
+    Logger.trace("recomputePartitionsFromUnreachable", a, b);
+
+    // lower numbers are more stable (likely larger), avoid recomputing them
+    const comp = a.partition > b.partition ? a : b;
+
+    comp.partition = this.nextPartition++;
+    this.recomputePartitions([comp], false);
+  }
+
+  // Recompute partitions starting from the given component(s)
+  private recomputePartitions(
     components: Iterable<NavComponent>,
     autoCreate: boolean
   ) {
@@ -187,12 +195,14 @@ export class NavMap {
                 frontiers[comp.partition].active = false;
                 activeFrontiers--;
               }
-            } else if (activeFrontiers === 1) {
-              // intersection with external partition, just merge if this is the last frontier
+            } else {
+              // intersection with external partition
               Logger.trace('merge with external partition', comp.partition);
+              // stop current frontier
               frontiers[current.partition].active = false;
+              // start new frontier based on external partition number
               current.partition = comp.partition;
-              frontiers[comp.partition] = { active: true, count: 0 };
+              frontiers[current.partition] = { active: true, count: 0 };
             }
           }
 

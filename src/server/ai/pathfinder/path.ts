@@ -1,5 +1,7 @@
 import { NavComponent, NavMap } from 'server/ai/pathfinder/nav_map';
 import { Locomotion } from 'server/entity/locomotion/locomotion';
+import { ReadonlyGameContext } from 'server/game/context';
+import { AddBlockEvent, RemoveBlockEvent } from 'server/game/events';
 import { throwError } from 'utils/error';
 import { Logger } from 'utils/logger';
 import { equalVectors, lerpVector, sqDist } from 'utils/math';
@@ -26,30 +28,13 @@ export type Destination = {
 };
 
 export interface Path {
+  getSource(): Vector3D;
   exists(): boolean;
   estimateCost(): number;
   hasNext(): boolean;
   getStep(): Vector3D | undefined;
   advance(): void;
   restart(source: Vector3D): void;
-}
-
-export class NoopPath {
-  constructor() {}
-  exists(): boolean {
-    return false;
-  }
-  estimateCost(): number {
-    return 0;
-  }
-  hasNext(): boolean {
-    return false;
-  }
-  getStep(): Vector3D | undefined {
-    return undefined;
-  }
-  advance(): void {}
-  restart(): void {}
 }
 
 export class FindPath implements Path {
@@ -64,11 +49,24 @@ export class FindPath implements Path {
     protected source: Vector3D,
     protected destinations: Destination[],
     readonly locomotion: Locomotion,
-    readonly navMap: NavMap
+    readonly navMap: NavMap,
+    context: ReadonlyGameContext
   ) {
     if (destinations.length === 0) {
       throwError('Invalid path. Zero destinations!');
     }
+
+    context.events.onFor(AddBlockEvent, this, (event) =>
+      this.invalidate(event.position)
+    );
+
+    context.events.onFor(RemoveBlockEvent, this, (event) =>
+      this.invalidate(event.position)
+    );
+  }
+
+  getSource(): Vector3D {
+    return this.source;
   }
 
   exists(): this is this & {
@@ -77,32 +75,55 @@ export class FindPath implements Path {
   } {
     // Quick check: Path is already computed
     if (this.computed) {
-      return this.coarsePath != undefined && this.partialPath != undefined;
+      return this.coarsePath != null && this.partialPath != null;
     }
 
-    // Quick check: Reachable if in the same partition
+    // Quick check: Unreachable if different partition
     const srcComp = this.navMap.findComponent(this.source);
     if (srcComp && srcComp.partition != null) {
       let strictlyUnreachable = true;
 
       for (const dst of this.destinations) {
         const dstComp = this.navMap.findComponent(dst.pos);
-        if (dstComp) {
-          if (dstComp.partition == null) {
-            strictlyUnreachable = false;
-          } else {
-            const samePartition = dstComp.partition === srcComp.partition;
-            if (samePartition) return true;
-          }
+        if (
+          dstComp &&
+          (srcComp.partition === dstComp.partition || dstComp.partition == null)
+        ) {
+          strictlyUnreachable = false;
         }
       }
 
+      Logger.trace('exists? strictlyUnreachable', strictlyUnreachable);
       if (strictlyUnreachable) return false;
     }
 
     // Final check: Recompute whole path
+    Logger.trace('exists? Recompute whole path');
     this.ensureComputed();
-    return this.coarsePath != undefined && this.partialPath != undefined;
+    return this.coarsePath != null && this.partialPath != null;
+  }
+
+  invalidate(pos: Vector3D): void {
+    if (!this.computed) return;
+    if (this.coarsePath == null) return;
+    if (this.partialPath == null) return;
+
+    for (const node of this.partialPath.slice(this.partialPathIndex)) {
+      if (equalVectors(node.position, pos)) {
+        this.computed = false;
+        return;
+      }
+    }
+
+    const comp = this.navMap.findComponent(pos);
+    if (comp == null) return;
+
+    for (const node of this.coarsePath.slice(this.coarsePathIndex)) {
+      if (node.component.id === comp.id) {
+        this.computed = false;
+        return;
+      }
+    }
   }
 
   private ensureComputed() {
@@ -368,6 +389,10 @@ export class FindPath implements Path {
       } while (false);
     }
 
+    for (const dstComp of dstComps) {
+      this.navMap.recomputePartitionsFromUnreachable(srcComp, dstComp.comp);
+    }
+
     return undefined;
   }
 
@@ -501,7 +526,10 @@ export class FindPath implements Path {
               ) {
                 let nextComp: NavComponent | undefined = current.component;
 
-                if (nextComp == null || !nextComp.cell.volume.containsPoint(nextPos)) {
+                if (
+                  nextComp == null ||
+                  !nextComp.cell.volume.containsPoint(nextPos)
+                ) {
                   // since nextPos is reached in a valid way - there must be a component here
                   nextComp = this.navMap.findComponent(nextPos)!;
                 }

@@ -4,6 +4,7 @@ import { MinionAgent } from 'server/ai/colony/minion_agent';
 import { Task } from 'server/ai/colony/task';
 import { Tasks } from 'server/ai/colony/task_helper';
 import { Path } from 'server/ai/pathfinder/path';
+import { Paths } from 'server/ai/pathfinder/path_helper';
 import { Locomotion } from 'server/entity/locomotion/locomotion';
 import { Logger } from 'utils/logger';
 import { Queue } from 'utils/queue';
@@ -75,6 +76,11 @@ export class LeaveBuildSiteTask extends Task {
       }
 
       path = agent.pathfinder.findPath(agentPos, escapeLocation);
+    }
+
+    // if path is stale
+    if (!Paths.followablePath(path, agentPos, agent.locomotion)) {
+      path.restart(agentPos);
     }
 
     if (!path.exists()) {
