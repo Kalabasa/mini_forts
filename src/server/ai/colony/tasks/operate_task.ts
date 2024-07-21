@@ -1,8 +1,8 @@
-import { ActionResult } from "server/ai/colony/action_result";
-import { MinionAgent } from "server/ai/colony/minion_agent";
-import { Operable } from "server/ai/colony/operable";
-import { MoveTask } from "server/ai/colony/tasks/move_task";
-import { Logger } from "utils/logger";
+import { ActionResult } from 'server/ai/colony/action_result';
+import { MinionAgent } from 'server/ai/colony/minion_agent';
+import { Operable } from 'server/ai/colony/operable';
+import { MoveTask } from 'server/ai/colony/tasks/move_task';
+import { Logger } from 'utils/logger';
 
 export class OperateTask extends MoveTask {
   readonly position: Vector3D;
@@ -10,11 +10,12 @@ export class OperateTask extends MoveTask {
   constructor(readonly operable: Operable) {
     super(operable.getOperatorPositions());
     this.position = operable.position;
-  }
+  } 
 
   override isStrictlyImpossible(): boolean {
-    // todo: Check ammo for weapon
-    return super.isStrictlyImpossible();
+    return (
+      super.isStrictlyImpossible() || this.operable.shouldOperate() == undefined
+    );
   }
 
   override execute(dt: number, agent: MinionAgent): ActionResult {

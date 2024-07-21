@@ -1,18 +1,18 @@
-import { IsNode } from "common/block/is_node";
-import { ActionResult } from "server/ai/colony/action_result";
-import { Operable } from "server/ai/colony/operable";
-import { Task } from "server/ai/colony/task";
-import { TaskManager } from "server/ai/colony/task_manager";
-import { Path } from "server/ai/pathfinder/path";
-import { Pathfinder } from "server/ai/pathfinder/pathfinder";
-import { Locomotion } from "server/entity/locomotion/locomotion";
-import { MinionDef } from "server/entity/minion/def";
-import { MinionScript, MinionAction } from "server/entity/minion/script";
-import { ReadonlyGameContext } from "server/game/context";
-import { Logger } from "utils/logger";
-import { equalVectors } from "utils/math";
-import { IntervalTimer } from "utils/timer";
-import { Paths } from "server/ai/pathfinder/path_helper";
+import { IsNode } from 'common/block/is_node';
+import { ActionResult } from 'server/ai/colony/action_result';
+import { Operable } from 'server/ai/colony/operable';
+import { Task } from 'server/ai/colony/task';
+import { TaskManager } from 'server/ai/colony/task_manager';
+import { Path } from 'server/ai/pathfinder/path';
+import { Pathfinder } from 'server/ai/pathfinder/pathfinder';
+import { Locomotion } from 'server/entity/locomotion/locomotion';
+import { MinionDef } from 'server/entity/minion/def';
+import { MinionScript, MinionAction } from 'server/entity/minion/script';
+import { ReadonlyGameContext } from 'server/game/context';
+import { Logger } from 'utils/logger';
+import { equalVectors } from 'utils/math';
+import { IntervalTimer } from 'utils/timer';
+import { Paths } from 'server/ai/pathfinder/path_helper';
 
 export class MinionAgent {
   readonly pathfinder: Pathfinder;
@@ -55,8 +55,10 @@ export class MinionAgent {
     }
 
     if (this.task) {
-      const taskResult = this.task.execute(dt, this);
-      if (this.task) {
+      const taskResult = this.task.isStrictlyImpossible()
+        ? ActionResult.Impossible
+        : this.task.execute(dt, this);
+      if (this.task != null) {
         if (taskResult === ActionResult.Done) this.task.end();
         if (taskResult === ActionResult.Stopped) this.task.unassign();
         if (taskResult === ActionResult.Impossible) this.task.end();
