@@ -27,7 +27,7 @@ const startingResources = {
 };
 
 const maxEnemyBases = 3;
-const initialMaxEnemies = 9;
+const initialMaxEnemies = 2;
 
 // Gameplay logic
 export class Director {
@@ -35,11 +35,12 @@ export class Director {
   private enemyBases: Vector3D[] = [];
   private readonly enemies = new Map<ID, EnemyEntity>();
   private maxEnemies = initialMaxEnemies;
+  private gameTime = 0;
 
   private eventTimer = new IntervalTimer(10);
 
   constructor(private readonly game: Game) {
-    game.events.onFor(LoadMapChunkEvent, this, this.onLoadMapChunk as any);
+    game.events.onFor(LoadMapChunkEvent, this, this.onLoadMapChunk);
   }
 
   reset(): void {
@@ -47,6 +48,8 @@ export class Director {
     this.eventTimer.reset();
     this.enemyBases = [];
     this.enemies.clear();
+    this.maxEnemies = initialMaxEnemies;
+    this.gameTime = 0;
   }
 
   init(): void {
@@ -74,13 +77,20 @@ export class Director {
   }
 
   update(dt: number): void {
+    this.gameTime += dt;
+
     if (this.enemiesDisabled) {
       for (const enemy of this.enemies.values()) {
         Logger.trace('Enemies disabled. Killing enemy', enemy);
         enemy.damage(Infinity);
       }
     }
+
     if (this.eventTimer.updateAndCheck(dt)) {
+      this.maxEnemies = Math.round(
+        Math.max(initialMaxEnemies, Math.log2(this.gameTime))
+      );
+
       this.cleanupEnemyEntities();
       if (!this.enemiesDisabled) {
         this.trySpawnEnemy();
@@ -88,6 +98,7 @@ export class Director {
     }
   }
 
+  // shouldn't this be a function in DenScript?
   spawnMinion(denPosition: Vector3D): MinionScript | undefined {
     if (!this.game.hasResource(MinionDef.properties.spawnRequirement)) {
       return undefined;
