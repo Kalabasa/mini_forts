@@ -1,12 +1,12 @@
 import { IsNode } from 'common/block/is_node';
 import { ActionResult } from 'server/ai/colony/action_result';
+import { MinionAgent } from 'server/ai/colony/minion_agent';
 import { Task } from 'server/ai/colony/task';
 import { Tasks } from 'server/ai/colony/task_helper';
+import { Path } from 'server/ai/pathfinder/path';
 import { Locomotion } from 'server/entity/locomotion/locomotion';
-import { throwError } from 'utils/error';
 import { Logger } from 'utils/logger';
 import { Queue } from 'utils/queue';
-import { MinionAgent } from 'server/ai/colony/minion_agent';
 
 const escapePathMemKey = Symbol();
 
@@ -18,17 +18,17 @@ export class LeaveBuildSiteTask extends Task {
   }
 
   isStrictlyImpossible(): boolean {
-    throwError('Not implemented!');
+    return false;
   }
 
   estimateCost(): number {
-    throwError('Not implemented!');
+    return 0;
   }
 
   override execute(dt: number, agent: MinionAgent): ActionResult {
     if (!this.ensurePath(agent)) return ActionResult.Impossible;
 
-    const path = this.memory[escapePathMemKey];
+    const path: Path = this.memory[escapePathMemKey];
 
     return Tasks.fulfillPath(this, agent, path);
   }
@@ -36,7 +36,7 @@ export class LeaveBuildSiteTask extends Task {
   private ensurePath(agent: MinionAgent): boolean {
     const agentPos = agent.getVoxelPosition();
 
-    let path = this.memory[escapePathMemKey];
+    let path = this.memory[escapePathMemKey] as Path | undefined;
 
     if (!path) {
       let escapeLocation: Vector3D | undefined;
