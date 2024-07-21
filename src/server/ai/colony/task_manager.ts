@@ -4,6 +4,7 @@ import { throwError } from 'utils/error';
 import { Logger } from 'utils/logger';
 import { IntervalTimer } from 'utils/timer';
 import { MinionAgent } from 'server/ai/colony/minion_agent';
+import { MoveTask } from 'server/ai/colony/tasks/move_task';
 
 // In order of priority
 const priorities = [TaskPriority.High, TaskPriority.Medium, TaskPriority.Low];
@@ -128,10 +129,6 @@ export class TaskManager {
     this.moveTaskToAssigned(task);
   }
 
-  changeTaskPriority(task: ManagedTask, priority: number): void {
-    throwError('Not yet implemented!');
-  }
-
   update(dt: number): void {
     for (const task of this.assignedTasks) {
       if (task.ended) {
@@ -192,7 +189,7 @@ export class TaskManager {
 
         for (
           let i = backlogIterator.next();
-          !i.done;
+          i.done !== true;
           i = backlogIterator.next()
         ) {
           const next: ManagedTask = i.value;
@@ -244,6 +241,10 @@ export class TaskManager {
         Logger.trace(' ', agent);
         Logger.trace(' ', task);
         Logger.trace('    isStrictlyImpossible?', task.isStrictlyImpossible());
+        if (task instanceof MoveTask) {
+          const path = task.getPath(agent as MinionAgent);
+          Logger.trace('    path exists?', path.exists());
+        }
         Logger.trace(' ', cost);
 
         // place costs in the matrix
@@ -336,7 +337,7 @@ export class TaskManager {
     Logger.trace(`TaskManager: Task matrix - ${message}`);
     const negInf = { [Logger.String]: () => '∞' };
     const posInf = { [Logger.String]: () => '∞' };
-    let row: any[] = [];
+    const row: unknown[] = [];
     for (let i = 0; i < this.buffer.length; i++) {
       const score = this.buffer[i];
       row.push(Number.isFinite(score) ? score : score < 0 ? negInf : posInf);

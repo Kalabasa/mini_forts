@@ -1,4 +1,5 @@
 import { tex } from 'resource_id';
+import { throwError } from 'utils/error';
 import { floorDiv } from 'utils/math';
 
 export const Font = {
@@ -21,7 +22,7 @@ function createNumberCombineParts(
   width: number;
   height: number;
 } {
-  if (!Number.isFinite(number)) throw new Error('Invalid number!');
+  if (!Number.isFinite(number)) throwError('Invalid number!');
 
   const png = digitsPng[style];
 

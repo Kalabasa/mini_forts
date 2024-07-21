@@ -24,10 +24,7 @@ export function registerDebugNavMap(game: Game) {
 
       if (name.length === 0) {
         const names = ['off', ...instances.keys()].join(', ');
-        return $multi(
-          false,
-          `Missing parameter. Expected one of: ${names}`
-        );
+        return $multi(false, `Missing parameter. Expected one of: ${names}`);
       }
 
       for (const instance of instances.values()) {

@@ -78,7 +78,6 @@ export class LeaveBuildSiteTask extends Task {
     }
 
     if (!path.exists()) {
-      this.end();
       return false;
     }
 

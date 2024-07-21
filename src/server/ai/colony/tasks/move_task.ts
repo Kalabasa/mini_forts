@@ -1,11 +1,10 @@
 import { ActionResult } from 'server/ai/colony/action_result';
 import { MinionAgent } from 'server/ai/colony/minion_agent';
 import { Task } from 'server/ai/colony/task';
-import { WorkerCapabilities } from 'server/ai/colony/worker_capabilities';
-import { Locomotion } from 'server/entity/locomotion/locomotion';
 import { Tasks } from 'server/ai/colony/task_helper';
+import { WorkerCapabilities } from 'server/ai/colony/worker_capabilities';
 import { Path } from 'server/ai/pathfinder/path';
-import { Logger } from 'utils/logger';
+import { Locomotion } from 'server/entity/locomotion/locomotion';
 
 const pathToDestination = Symbol();
 
@@ -44,7 +43,6 @@ export class MoveTask extends Task {
     const path = this.getPath(agent);
 
     if (!path.exists()) {
-      this.unassign();
       return ActionResult.Stopped;
     }
 
@@ -53,10 +51,6 @@ export class MoveTask extends Task {
     if (moveResult === ActionResult.Stopped) {
       path.restart(agent.getVoxelPosition());
       return agent.followPath(path);
-    }
-
-    if (moveResult === ActionResult.Impossible) {
-      this.end();
     }
 
     return moveResult;

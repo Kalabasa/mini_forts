@@ -49,7 +49,7 @@ export class NoopPath {
     return undefined;
   }
   advance(): void {}
-  restart(source: Vector3D): void {}
+  restart(): void {}
 }
 
 export class FindPath implements Path {
@@ -65,37 +65,48 @@ export class FindPath implements Path {
     protected destinations: Destination[],
     readonly locomotion: Locomotion,
     readonly navMap: NavMap
-  ) {}
+  ) {
+    if (destinations.length === 0) {
+      throwError('Invalid path. Zero destinations!');
+    }
+  }
 
   exists(): this is this & {
     coarsePath: CoarsePathNode[];
     partialPath: PathNode[];
   } {
-    if (this.source && this.destinations && !this.computed) {
-      const srcComp = this.navMap.findComponent(this.source);
-      if (srcComp) {
-        let reachable: boolean | undefined;
-        for (const dst of this.destinations) {
-          const dstComp = this.navMap.findComponent(dst.pos);
-          if (
-            dstComp &&
-            dstComp.partition != null &&
-            srcComp.partition != null
-          ) {
-            reachable = dstComp.partition === srcComp.partition;
-            if (reachable) break;
+    // Quick check: Path is already computed
+    if (this.computed) {
+      return this.coarsePath != undefined && this.partialPath != undefined;
+    }
+
+    // Quick check: Reachable if in the same partition
+    const srcComp = this.navMap.findComponent(this.source);
+    if (srcComp && srcComp.partition != null) {
+      let strictlyUnreachable = true;
+
+      for (const dst of this.destinations) {
+        const dstComp = this.navMap.findComponent(dst.pos);
+        if (dstComp) {
+          if (dstComp.partition == null) {
+            strictlyUnreachable = false;
+          } else {
+            const samePartition = dstComp.partition === srcComp.partition;
+            if (samePartition) return true;
           }
         }
-        if (reachable != undefined) return reachable;
       }
 
-      this.restart(this.source);
+      if (strictlyUnreachable) return false;
     }
+
+    // Final check: Recompute whole path
+    this.ensureComputed();
     return this.coarsePath != undefined && this.partialPath != undefined;
   }
 
   private ensureComputed() {
-    if (this.source && this.destinations && !this.computed) {
+    if (!this.computed) {
       this.restart(this.source);
     }
   }
@@ -105,7 +116,7 @@ export class FindPath implements Path {
 
     let cost = Infinity;
     for (const dst of this.destinations) {
-      let c = sqDist(this.source, dst.pos);
+      const c = sqDist(this.source, dst.pos);
       if (c < cost) {
         cost = c;
       }
@@ -488,9 +499,9 @@ export class FindPath implements Path {
                 visitedNext == undefined ||
                 visitedNext.costFromSource > nextCost
               ) {
-                let nextComp = current.component;
+                let nextComp: NavComponent | undefined = current.component;
 
-                if (!nextComp || !nextComp.cell.volume.containsPoint(nextPos)) {
+                if (nextComp == null || !nextComp.cell.volume.containsPoint(nextPos)) {
                   // since nextPos is reached in a valid way - there must be a component here
                   nextComp = this.navMap.findComponent(nextPos)!;
                 }
@@ -508,6 +519,7 @@ export class FindPath implements Path {
             }
           }
         }
+        // eslint-disable-next-line no-constant-condition
       } while (false);
     }
 

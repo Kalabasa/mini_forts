@@ -61,7 +61,7 @@ export class MinionAgent {
       if (this.task != null) {
         if (taskResult === ActionResult.Done) this.task.end();
         if (taskResult === ActionResult.Stopped) this.task.unassign();
-        if (taskResult === ActionResult.Impossible) this.task.end();
+        if (taskResult === ActionResult.Impossible) this.task.unassign();
       }
     } else if (this.minion.action.type !== MinionAction.Move) {
       this.minion.endAction();

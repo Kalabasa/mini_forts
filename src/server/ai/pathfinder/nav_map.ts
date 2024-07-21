@@ -86,6 +86,17 @@ export class NavMap {
     }
   }
 
+  // fixme: doesn't break up partitions when split
+  //   e.g. with initial nodes:
+  //        0 - 0 - 0 - 0 - 0
+  //   Cut the middle connecting node (splitting the world in half):
+  //        0 - 0       0 - 0
+  //   Invalidate region:
+  //        0 - nil   nil - 0
+  //   Propagate partition numbers:
+  //        0 - 0       0 - 0
+  //   Expected
+  //        0 - 0       1 - 1
   invalidateRegion(minPos: Vector3D, maxPos: Vector3D) {
     const minCell = vectorFloorDiv(minPos, cellSize);
     const maxCell = {
