@@ -541,6 +541,9 @@ export class NavCell {
             sample: (posCopy = posCopy ?? vector.new(pos)),
             partition: undefined,
             links: {},
+            [Logger.String]() {
+              return `NavComponent(${this.id})`;
+            },
           };
           this.components.set(root, component);
         }
