@@ -106,7 +106,7 @@ export class NavMap {
             // invalidate adjacent cells linking to this cell
             for (let dir = 0; dir < adjacentNodes.length; dir++) {
               const oppositeDir = findOppositeDirection(dir, adjacentNodes);
-              if (oppositeDir) {
+              if (oppositeDir != null) {
                 for (const cellDelta of this.adjacentCellDeltas[dir]) {
                   const nextCellPos = vector.add(cell.getCellPos(), cellDelta);
                   if (
@@ -169,7 +169,7 @@ export class NavMap {
         if (comp.partition !== current.partition) {
           // resolve frontier intersections
           if (comp.partition != null) {
-            if (frontiers[comp.partition]) {
+            if (frontiers[comp.partition] != null) {
               // frontier intersection, only one should remain
               if (frontiers[comp.partition].active) {
                 Logger.trace('discard partition', comp.partition);
@@ -455,7 +455,7 @@ export class NavCell {
         const nextPos = vector.add(pos, delta);
 
         if (this.volume.containsPoint(nextPos)) {
-          let nextIndex = this.volume.index(nextPos.x, nextPos.y, nextPos.z);
+          const nextIndex = this.volume.index(nextPos.x, nextPos.y, nextPos.z);
           if (
             nextIndex < index &&
             Locomotion.passableNodeCost(moveCost(nextPos, pos))
@@ -557,7 +557,7 @@ export class NavCell {
     return set;
   }
 
-  *iterateComponents(): Iterable<NavComponent> {
+  iterateComponents(): Iterable<NavComponent> {
     return this.components.values();
   }
 
@@ -603,9 +603,9 @@ function getNextCellDeltas(delta: Vector3D): Vector3D[] {
   const maxZ = floorDiv(cellSize - 1 + delta.z, cellSize);
 
   const results: Vector3D[] = [];
-  for (let z of $range(minZ, maxZ)) {
-    for (let y of $range(minY, maxY)) {
-      for (let x of $range(minX, maxX)) {
+  for (const z of $range(minZ, maxZ)) {
+    for (const y of $range(minY, maxY)) {
+      for (const x of $range(minX, maxX)) {
         if (x !== 0 || y !== 0 || z !== 0) {
           results.push({ x, y, z });
         }
@@ -635,11 +635,6 @@ function findOppositeDirection(
 
 function cellKey(x: number, y: number, z: number): string {
   return `${x}:${y}:${z}`;
-}
-
-function componentKey(component: NavComponent): string {
-  const { x, y, z } = component.cell.volume.min;
-  return `${x}:${y}:${z}:${component.id}`;
 }
 
 function voxelKey({ x, y, z }: Vector3D): string {
