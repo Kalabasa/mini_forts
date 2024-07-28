@@ -389,6 +389,7 @@ export class FindPath implements Path {
       } while (false);
     }
 
+    // fixme: big lags
     for (const dstComp of dstComps) {
       this.navMap.recomputePartitionsFromUnreachable(srcComp, dstComp.comp);
     }

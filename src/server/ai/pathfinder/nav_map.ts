@@ -148,9 +148,8 @@ export class NavMap {
 
     Logger.trace("recomputePartitionsFromUnreachable", a, b);
 
-    // lower numbers are more stable (likely larger), avoid recomputing them
-    const comp = a.partition > b.partition ? a : b;
-
+    // recompute either
+    const comp = b;
     comp.partition = this.nextPartition++;
     this.recomputePartitions([comp], false);
   }
