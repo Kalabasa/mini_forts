@@ -23,27 +23,29 @@ export class Pathfinder {
   ) {
     this.navMap = createNavMap(locomotion);
 
-    context.events.onFor(StartStageLoadEvent, this, () => {
-      this.navMap.reset();
-    });
+    context.events.onFor(
+      StartStageLoadEvent,
+      this,
+      this.handleStartStageLoadEvent
+    );
+    context.events.onFor(LoadMapChunkEvent, this, this.handleLoadMapChunkEvent);
+    context.events.onFor(AddBlockEvent, this, this.handleInvalidatingEvent);
+    context.events.onFor(RemoveBlockEvent, this, this.handleInvalidatingEvent);
+  }
 
-    context.events.onFor(LoadMapChunkEvent, this, (event) => {
-      this.navMap.invalidateRegion(event.volume.min, event.volume.max);
-    });
+  private handleInvalidatingEvent(event: AddBlockEvent | RemoveBlockEvent) {
+    this.navMap.invalidateRegion(
+      vector.subtract(event.position, 1),
+      vector.add(event.position, 1)
+    );
+  }
 
-    context.events.onFor(AddBlockEvent, this, (event) => {
-      this.navMap.invalidateRegion(
-        vector.subtract(event.position, 1),
-        vector.add(event.position, 1)
-      );
-    });
+  private handleLoadMapChunkEvent(event: LoadMapChunkEvent) {
+    this.navMap.invalidateRegion(event.volume.min, event.volume.max);
+  }
 
-    context.events.onFor(RemoveBlockEvent, this, (event) => {
-      this.navMap.invalidateRegion(
-        vector.subtract(event.position, 1),
-        vector.add(event.position, 1)
-      );
-    });
+  private handleStartStageLoadEvent(event: StartStageLoadEvent) {
+    this.navMap.reset();
   }
 
   findPath(source: Vector3D, destination: Vector3D): Path {

@@ -56,13 +56,12 @@ export class FindPath implements Path {
       throwError('Invalid path. Zero destinations!');
     }
 
-    context.events.onFor(AddBlockEvent, this, (event) =>
-      this.invalidate(event.position)
-    );
+    context.events.onFor(AddBlockEvent, this, this.handleInvalidatingEvent);
+    context.events.onFor(RemoveBlockEvent, this, this.handleInvalidatingEvent);
+  }
 
-    context.events.onFor(RemoveBlockEvent, this, (event) =>
-      this.invalidate(event.position)
-    );
+  private handleInvalidatingEvent(event: AddBlockEvent | RemoveBlockEvent): void {
+    this.invalidate(event.position);
   }
 
   getSource(): Vector3D {
@@ -105,23 +104,25 @@ export class FindPath implements Path {
 
   invalidate(pos: Vector3D): void {
     if (!this.computed) return;
-    if (this.coarsePath == null) return;
-    if (this.partialPath == null) return;
 
-    for (const node of this.partialPath.slice(this.partialPathIndex)) {
-      if (equalVectors(node.position, pos)) {
-        this.computed = false;
-        return;
+    if (this.partialPath != null) {
+      for (const node of this.partialPath.slice(this.partialPathIndex)) {
+        if (equalVectors(node.position, pos)) {
+          this.computed = false;
+          return;
+        }
       }
     }
 
-    const comp = this.navMap.findComponent(pos);
-    if (comp == null) return;
+    if (this.coarsePath != null) {
+      const comp = this.navMap.findComponent(pos);
+      if (comp == null) return;
 
-    for (const node of this.coarsePath.slice(this.coarsePathIndex)) {
-      if (node.component.id === comp.id) {
-        this.computed = false;
-        return;
+      for (const node of this.coarsePath.slice(this.coarsePathIndex)) {
+        if (node.component.id === comp.id) {
+          this.computed = false;
+          return;
+        }
       }
     }
   }

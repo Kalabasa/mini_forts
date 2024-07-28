@@ -74,31 +74,36 @@ export class Game implements GameContext {
   ) {
     this.blockPhysics = new BlockPhysicsEngine(blockManager);
 
-    this.events.onFor(LoadStageHomeEvent, this, (event) => {
-      if (!this.stageInitialized) {
-        this.initStage(event.stage);
-        this.stageInitialized = true;
-      }
-    });
+    this.events.onFor(LoadStageHomeEvent, this, this.handleLoadStageHomeEvent);
+    this.events.onFor(AddEntityEvent, this, this.handleAddEntityEvent);
+    this.events.onFor(EntityDiedEvent, this, this.handleEntityDiedEvent);
+    this.events.onFor(RemoveEntityEvent, this, this.handleRemoveEntityEvent);
+  }
 
-    this.events.on(AddEntityEvent, (event) => {
-      if (event.entity instanceof EnemyEntityScript) {
-        this.director.addEnemy(event.entity.id, event.entity);
-      }
-    });
+  private handleRemoveEntityEvent(event: RemoveEntityEvent) {
+    if (!event.entity.alive) return; // dead already handled
+    if (event.entity instanceof EnemyEntityScript) {
+      this.director.removeEnemy(event.entity.id);
+    }
+  }
 
-    this.events.on(EntityDiedEvent, (event) => {
-      if (event.entity instanceof EnemyEntityScript) {
-        this.director.removeEnemy(event.entity.id);
-      }
-    });
+  private handleEntityDiedEvent(event: EntityDiedEvent) {
+    if (event.entity instanceof EnemyEntityScript) {
+      this.director.removeEnemy(event.entity.id);
+    }
+  }
 
-    this.events.on(RemoveEntityEvent, (event) => {
-      if (!event.entity.alive) return; // dead already handled
-      if (event.entity instanceof EnemyEntityScript) {
-        this.director.removeEnemy(event.entity.id);
-      }
-    });
+  private handleAddEntityEvent(event: AddEntityEvent) {
+    if (event.entity instanceof EnemyEntityScript) {
+      this.director.addEnemy(event.entity.id, event.entity);
+    }
+  }
+
+  private handleLoadStageHomeEvent(event: LoadStageHomeEvent) {
+    if (!this.stageInitialized) {
+      this.initStage(event.stage);
+      this.stageInitialized = true;
+    }
   }
 
   onInit() {

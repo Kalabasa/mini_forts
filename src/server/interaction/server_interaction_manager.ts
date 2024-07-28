@@ -19,6 +19,7 @@ import {
 import { ToolRegistry } from 'server/interaction/tool_registry';
 import { RemotePlayer } from 'server/player/remote_player';
 import { throwError } from 'utils/error';
+import { Logger } from 'utils/logger';
 import { Volume } from 'utils/space';
 
 export class ServerInteractionManager {
@@ -31,9 +32,16 @@ export class ServerInteractionManager {
     private readonly gameContext: GameContext,
     private readonly guiManager: GUIManager
   ) {
-    gameContext.events.onFor(RemoveBlockEvent, this, (event) => {
-      removeDigMarkers(new Volume(event.position, event.position));
-    });
+    gameContext.events.onFor(
+      RemoveBlockEvent,
+      this,
+      this.handleRemoveBlockEvent
+    );
+  }
+
+  private handleRemoveBlockEvent(event: RemoveBlockEvent) {
+    Logger.trace("handleRemoveBlockEvent", event);
+    removeDigMarkers(new Volume(event.position, event.position));
   }
 
   update(dt: number): void {

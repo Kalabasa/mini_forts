@@ -39,11 +39,7 @@ export class World {
 
   setContext(context: ReadonlyGameContext): void {
     this.context = context;
-    this.context.events.onFor(
-      LoadMapChunkEvent,
-      context,
-      this.onLoadMapChunk as any
-    );
+    this.context.events.onFor(LoadMapChunkEvent, context, this.onLoadMapChunk);
   }
 
   load(data: WorldData) {
@@ -173,8 +169,7 @@ export class World {
     }
   }
 
-  /** @noSelf */
-  private onLoadMapChunk = (event: LoadMapChunkEvent) => {
+  private onLoadMapChunk(event: LoadMapChunkEvent) {
     if (
       this.activeStage &&
       !this.homeLoaded &&
@@ -183,7 +178,7 @@ export class World {
       this.homeLoaded = true;
       this.context.events.emit(new LoadStageHomeEvent(this.activeStage));
     }
-  };
+  }
 
   waitUntilMapLoaded(callback: Function): void;
   waitUntilMapLoaded(position: Vector3D, callback: Function): void;

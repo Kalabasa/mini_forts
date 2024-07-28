@@ -8,11 +8,7 @@ type Ref = WeakRef<unknown> | undefined;
 type Callback<T> = (event: T) => void;
 
 class Listener<T> {
-  constructor(
-    readonly type: EventType<T>,
-    readonly ref: Ref,
-    readonly callback: Callback<T>
-  ) {}
+  constructor(readonly type: EventType<T>, readonly callback: Callback<T>) {}
 }
 
 export class EventBus {
@@ -20,15 +16,23 @@ export class EventBus {
   private listeners = new Set<Listener<any>>();
 
   on<T>(type: EventType<T>, callback: Callback<T>): void {
-    this.listeners.add(new Listener(type, undefined, callback));
+    this.listeners.add(new Listener(type, callback));
   }
 
-  onFor<T>(
+  // add an object method as listener with a weak reference
+  onFor<T, O extends object>(
     type: EventType<T>,
-    ref: unknown,
-    callback: Callback<T>
+    obj: O,
+    method: (this: O, event: T) => void
   ): void {
-    this.listeners.add(new Listener(type, new WeakRef(ref), callback));
+    const ref = new WeakRef(obj);
+
+    const callback = (event: T) => {
+      const objNow = ref?.deref();
+      if (objNow) method.call(objNow, event);
+    };
+
+    this.on(type, callback);
   }
 
   off<T>(type: EventType<T>, callback: Callback<T>): void {
@@ -41,9 +45,7 @@ export class EventBus {
 
   emit<T extends { constructor: Function }>(event: T): void {
     for (const listener of this.listeners) {
-      if (listener.ref && !listener.ref.deref()) {
-        this.listeners.delete(listener);
-      } else if (event instanceof listener.type) {
+      if (event instanceof listener.type) {
         listener.callback(event);
       }
     }

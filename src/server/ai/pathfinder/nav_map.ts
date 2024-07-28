@@ -148,10 +148,15 @@ export class NavMap {
 
     Logger.trace("recomputePartitionsFromUnreachable", a, b);
 
-    // recompute either
-    const comp = b;
-    comp.partition = this.nextPartition++;
-    this.recomputePartitions([comp], false);
+    // try recomputing b
+    b.partition = this.nextPartition++;
+    this.recomputePartitions([b], false);
+    if (b.partition === a.partition) {
+      // merged with same external partition
+      // try recomputing a
+      a.partition = this.nextPartition++;
+      this.recomputePartitions([a], false);
+    }
   }
 
   // Recompute partitions starting from the given component(s)

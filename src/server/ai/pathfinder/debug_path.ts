@@ -113,7 +113,7 @@ export function registerDebugPath(
   minetest.register_globalstep((dt: number) => {
     time += dt;
 
-    for (const ref of instances.values()) {
+    for (const [name, ref] of instances.entries()) {
       const instance = ref?.deref();
       if (instance) {
         if (instance.debugEnabled) {
@@ -122,6 +122,8 @@ export function registerDebugPath(
             instance.render();
           }
         }
+      } else {
+        instances.delete(name);
       }
     }
 

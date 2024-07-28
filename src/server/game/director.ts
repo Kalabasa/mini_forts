@@ -167,8 +167,7 @@ export class Director {
     minetest.after(1, () => this.trySpawnEnemyBases());
   }
 
-  /** @noSelf */
-  private onLoadMapChunk = (event: LoadMapChunkEvent) => {
+  private onLoadMapChunk(event: LoadMapChunkEvent) {
     event.volume.forEach((pos, i) => {
       const id = event.data[i];
       if (id === EnemyCrystalDef.registry.states.default.id) {
@@ -176,7 +175,7 @@ export class Director {
         Logger.trace('Loaded enemy base:', pos);
       }
     });
-  };
+  }
 
   private trySpawnEnemyBases() {
     if (this.enemyBases.length >= maxEnemyBases) return;
