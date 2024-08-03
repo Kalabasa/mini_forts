@@ -4,6 +4,7 @@ import { RemotePlayer } from 'server/player/remote_player';
 import { CONFIG } from 'utils/config';
 import { Logger } from 'utils/logger';
 import { IntervalTimer } from 'utils/timer';
+import { DebugMarker } from 'server/debug/debug_marker';
 
 export function registerDebugPointed(game: Game) {
   if (CONFIG.isProd) return;
@@ -18,7 +19,7 @@ export function registerDebugPointed(game: Game) {
 
     if (!enabledForPlayer) return;
 
-    if (!hudID) {
+    if (hudID == null) {
       Logger.error('Pointed thing debugger error!');
       enabledForPlayer = undefined;
       return;
@@ -37,12 +38,14 @@ export function registerDebugPointed(game: Game) {
       const node = minetest.get_node(pointedThing.under);
       const def = game.blockManager.getDefByNodeName(node.name);
       const ref = game.blockManager.getRef(pointedThing.under);
-      const entities = game.entityStore.find({
-        volume: {
-          min: vector.subtract(pointedThing.above, 0.5),
-          max: vector.add(pointedThing.above, 0.5),
-        },
-      });
+      const entities = [
+        ...game.entityStore.find({
+          volume: {
+            min: vector.subtract(pointedThing.above, 0.5),
+            max: vector.add(pointedThing.above, 0.5),
+          },
+        }),
+      ];
 
       info = [
         `(${pointedThing.under.x},${pointedThing.under.y},${pointedThing.under.z})`,
@@ -50,6 +53,17 @@ export function registerDebugPointed(game: Game) {
         def && `Block: '${def.name}' Health: ${ref?.getHealth()}`,
         Logger.format(...entities),
       ];
+
+      for (const entity of entities) {
+        if (entity.targetLocation) {
+          DebugMarker.mark(entity.targetLocation, {
+            type: DebugMarker.Point.Yellow,
+            duration: timer.seconds,
+            nametag: 'targetLoc',
+          });
+        }
+      }
+
       break;
     }
 
@@ -63,7 +77,7 @@ export function registerDebugPointed(game: Game) {
   minetest.register_chatcommand('debug_pointed', {
     func: (playerName, param) => {
       if (enabledForPlayer) {
-        if (hudID) enabledForPlayer.playerObj.hud_remove(hudID);
+        if (hudID != null) enabledForPlayer.playerObj.hud_remove(hudID);
 
         enabledForPlayer = undefined;
         hudID = undefined;

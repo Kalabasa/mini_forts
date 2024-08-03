@@ -1,5 +1,5 @@
 import { IsNode } from 'common/block/is_node';
-import { ActionResult } from 'server/ai/colony/action_result';
+import { ActionResult } from 'server/ai/action_result';
 import { Operable } from 'server/ai/colony/operable';
 import { Task } from 'server/ai/colony/task';
 import { TaskManager } from 'server/ai/colony/task_manager';
@@ -37,23 +37,6 @@ export class MinionAgent {
   }
 
   update(dt: number): void {
-    if (this.idleTimer.updateAndCheck(dt)) {
-      // todo: apply this fix to general walkClimb locomotion
-      // This fixes pathfinding when agent is standing at the edge
-      // Stay away from edges
-      if (
-        !this.minion.targetLocation &&
-        this.locomotion.moveCost(this.getVoxelPosition()) === Infinity &&
-        this.minion.collisionInfo.touching_ground
-      ) {
-        this.minion.targetLocation = vector.add(
-          this.getVoxelPosition(),
-          vector.direction(this.getVoxelPosition(), this.getPosition())
-        );
-        return;
-      }
-    }
-
     if (this.task) {
       const taskResult = this.task.isStrictlyImpossible()
         ? ActionResult.Impossible
@@ -85,7 +68,7 @@ export class MinionAgent {
   }
 
   followPath(path: Path): ActionResult {
-    return Paths.followPath(path, this.minion);
+    return this.locomotion.followPath(this.minion, path);
   }
 
   workBuildable(target: Vector3D): ActionResult {

@@ -1,24 +1,31 @@
 import { getNodeDef } from 'common/block/get_node_def';
 import { IsNode } from 'common/block/is_node';
 import { BlockTag } from 'common/block/tag';
+import { ActionResult } from 'server/ai/action_result';
+import { Path } from 'server/ai/pathfinder/path';
 import { Entity } from 'server/entity/entity';
 import { randomInt } from 'utils/math';
 
 export type Locomotion = {
   pathfinderID: string; // used for sharing pathfinders
   adjacentNodes: ReadonlyArray<Vector3D>;
+  /** @noSelf */
+  normalizePathSource(position: Vector3D): Vector3D;
   /**
    * Movement cost for traversing position.
    * If fromOrTo is supplied, cost to move between the positions is added.
    * @noSelf
    */
   moveCost(position: Vector3D, fromOrTo?: Vector3D): number;
+  /**
+   * Updates an entity's targetLocation while advancing the specified path.
+   * @noSelf
+   */
+  followPath(entity: Entity, path: Path): ActionResult;
   /** @noSelf */
   update(
     dt: number,
     entity: Entity,
-    collisionInfo: CollisionInfo,
-    prevCollisionInfo: CollisionInfo,
     targetLocation: Vector3D | undefined
   ): void;
 };

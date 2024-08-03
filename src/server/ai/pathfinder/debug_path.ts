@@ -190,8 +190,6 @@ export class DebugPath extends FindPath {
   }
 
   render() {
-    if (!this.exists()) return;
-
     const duration = renderInterval * 2;
 
     for (const [i, n] of (this.partialPath ?? []).entries()) {
@@ -237,6 +235,21 @@ export class DebugPath extends FindPath {
       }
     }
 
+    if (!this.exists()) {
+      drawLine(
+        this.source,
+        this.destinations[0].pos,
+        DebugMarker.Point.Red,
+        duration
+      );
+
+      DebugMarker.mark(this.source, {
+        type: DebugMarker.Point.Red,
+        nametag: 'src',
+        duration,
+      });
+    }
+
     for (const dst of this.destinations ?? []) {
       DebugMarker.mark(dst.pos, {
         type: DebugMarker.Point.Yellow,
@@ -244,5 +257,33 @@ export class DebugPath extends FindPath {
         duration,
       });
     }
+  }
+}
+
+function drawLine(
+  start: Vector3D,
+  end: Vector3D,
+  markerType: (typeof DebugMarker.Point)[keyof typeof DebugMarker.Point],
+  duration: number
+) {
+  let distance = 0;
+  const stepSize = 0.3;
+  const maxDistance = vector.distance(start, end);
+  const step = vector.multiply(
+    vector.subtract(end, start),
+    stepSize / maxDistance
+  );
+
+  const p = vector.new(start);
+  while (distance < maxDistance) {
+    DebugMarker.mark(p, {
+      type: markerType,
+      duration,
+    });
+
+    p.x += step.x;
+    p.y += step.y;
+    p.z += step.z;
+    distance += stepSize;
   }
 }

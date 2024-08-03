@@ -1,4 +1,4 @@
-import { Entity } from 'server/entity/entity';
+import { ActionResult } from 'server/ai/action_result';
 import { Locomotion } from 'server/entity/locomotion/locomotion';
 
 // aka noop
@@ -10,13 +10,9 @@ function create(): Locomotion {
   return {
     pathfinderID: '',
     adjacentNodes: [],
+    normalizePathSource: (position) => position,
     moveCost: () => 0,
-    update: (
-      dt: number,
-      entity: Entity,
-      collisionInfo: CollisionInfo,
-      prevCollisionInfo: CollisionInfo,
-      targetLocation: Vector3D | undefined
-    ): void => {},
+    followPath: () => ActionResult.Impossible,
+    update: (): void => {},
   };
 }

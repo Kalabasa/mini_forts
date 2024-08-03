@@ -1,14 +1,13 @@
 import { IsNode } from 'common/block/is_node';
-import { ActionResult } from 'server/ai/colony/action_result';
 import { Path } from 'server/ai/pathfinder/path';
 import { Pathfinder } from 'server/ai/pathfinder/pathfinder';
-import { Paths } from 'server/ai/pathfinder/path_helper';
 import { Entity, EntityProperties, EntityScript } from 'server/entity/entity';
 import { Faction } from 'server/entity/faction';
 import { Locomotion } from 'server/entity/locomotion/locomotion';
 import { DecayPoofParticle } from 'server/particles/decay_poof/decay_poof';
 import { inRange } from 'utils/math';
 import { IntervalTimer } from 'utils/timer';
+import { Logger } from 'utils/logger';
 
 export abstract class EnemyEntityProperties extends EntityProperties {
   abstract readonly attackRange: number;
@@ -90,18 +89,15 @@ export abstract class EnemyEntityScript<
         this.huntLocation
       );
     } else if (!this.huntPath.exists()) {
+      this.targetLocation = undefined;
       if (this.repathTimerPassed) {
         this.repathTimer.reset();
         this.huntPath.restart(this.getVoxelPosition());
-      } else {
-        this.targetLocation = undefined;
       }
     } else if (this.huntPath.hasNext()) {
-      const result = Paths.followPath(this.huntPath, this);
-      if (result === ActionResult.Stopped) {
-        this.targetLocation = this.huntLocation;
-      }
+      this.locomotion.followPath(this, this.huntPath);
     } else {
+      Logger.trace("end");
       this.targetLocation = this.huntLocation;
     }
 

@@ -56,11 +56,15 @@ export class FindPath implements Path {
       throwError('Invalid path. Zero destinations!');
     }
 
+    this.source = this.locomotion.normalizePathSource(source);
+
     context.events.onFor(AddBlockEvent, this, this.handleInvalidatingEvent);
     context.events.onFor(RemoveBlockEvent, this, this.handleInvalidatingEvent);
   }
 
-  private handleInvalidatingEvent(event: AddBlockEvent | RemoveBlockEvent): void {
+  private handleInvalidatingEvent(
+    event: AddBlockEvent | RemoveBlockEvent
+  ): void {
     this.invalidate(event.position);
   }
 
@@ -219,14 +223,14 @@ export class FindPath implements Path {
   }
 
   restart(source: Vector3D): void {
-    this.source = source;
-    this.coarsePath = this.searchCoarsePath(source, this.destinations);
+    this.source = this.locomotion.normalizePathSource(source);
+    this.coarsePath = this.searchCoarsePath(this.source, this.destinations);
 
     if (this.coarsePath) {
       // The rest of the partialPath will be computed in advance()
       this.partialPath = [
         {
-          position: source,
+          position: this.source,
           component: this.coarsePath[0].component,
           from: undefined,
           costFromSource: 0,

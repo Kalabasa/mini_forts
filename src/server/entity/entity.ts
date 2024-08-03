@@ -185,8 +185,6 @@ export class EntityScript<P extends EntityProperties = EntityProperties> {
       this.locomotion.update(
         dt,
         this,
-        this.collisionInfo,
-        this.prevCollisionInfo,
         this.preciseTargetLocation
       );
     }

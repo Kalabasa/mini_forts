@@ -1,4 +1,4 @@
-import { ActionResult } from 'server/ai/colony/action_result';
+import { ActionResult } from 'server/ai/action_result';
 import { Tasks } from 'server/ai/colony/task_helper';
 import { BlockDefinition } from 'server/block/block';
 import { Logger } from 'utils/logger';

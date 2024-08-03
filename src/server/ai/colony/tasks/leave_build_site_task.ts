@@ -1,5 +1,5 @@
 import { IsNode } from 'common/block/is_node';
-import { ActionResult } from 'server/ai/colony/action_result';
+import { ActionResult } from 'server/ai/action_result';
 import { MinionAgent } from 'server/ai/colony/minion_agent';
 import { Task } from 'server/ai/colony/task';
 import { Tasks } from 'server/ai/colony/task_helper';

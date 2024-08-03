@@ -1,4 +1,4 @@
-import { ActionResult } from "server/ai/colony/action_result";
+import { ActionResult } from "server/ai/action_result";
 import { Task } from "server/ai/colony/task";
 import { Path } from "server/ai/pathfinder/path";
 import { MinionAgent } from "server/ai/colony/minion_agent";
