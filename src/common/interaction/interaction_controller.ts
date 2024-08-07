@@ -159,7 +159,6 @@ export class InteractionController {
       throwError("Can't start new interaction while another is ongoing!");
     }
 
-    Logger.trace('start', mode);
     this.mode = mode;
     this.start = start;
     this.cursor = start;
@@ -183,13 +182,11 @@ export class InteractionController {
 
   private stopInteraction() {
     if (!this.mode) throwError('No mode!');
-    Logger.trace('stop', this.mode);
     this.isContinuing = false;
   }
 
   private endInteraction() {
     if (!this.mode) throwError('No mode!');
-    Logger.trace('stop', this.mode);
 
     if (this.isContinuing) {
       const result = this.mode.onEnd(this.start!, this.cursor!);
@@ -202,7 +199,6 @@ export class InteractionController {
       }
     }
 
-    Logger.trace('end', this.mode);
     this.mode = undefined;
     this.start = undefined;
     this.cursor = undefined;
