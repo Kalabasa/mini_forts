@@ -42,7 +42,7 @@ export class TaskManager {
   }
 
   reset() {
-    this.logger.info('Resetting TaskManager...');
+    this.logger.info('Resetting...');
     this.freeAgents.clear();
     this.busyAgents.clear();
     this.assignedTasks.clear();
@@ -222,7 +222,11 @@ export class TaskManager {
   }
 
   protected distributeTasks(agents: ManagedAgent[], tasks: ManagedTask[]) {
-    this.logger.trace('distributeTasks', agents.length, tasks.length);
+    this.logger.trace(
+      'distributeTasks',
+      `${agents.length}a`,
+      `${tasks.length}t`
+    );
 
     // make a matrix of agents ⨉ tasks for costs, with extra row and column for maximums
     const agentsLen = agents.length;
@@ -322,7 +326,7 @@ export class TaskManager {
   }
 
   private traceBuffer(message: string) {
-    this.logger.trace(`TaskManager: Task matrix - ${message}`);
+    this.logger.trace(`Task matrix - ${message}`);
     const negInf = { [Logger.String]: () => '∞' };
     const posInf = { [Logger.String]: () => '∞' };
     const row: unknown[] = [];

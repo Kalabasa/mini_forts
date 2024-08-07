@@ -22,13 +22,11 @@ type FormattedMessage<T> = {
   p: T;
 };
 
-type Ref = WeakRef<unknown> | undefined;
 type Callback<T extends object> = (message: ReceivedChannelMessage<T>) => void;
 
 class Listener<T extends object> {
   constructor(
     readonly type: ChannelMessageType<T>,
-    readonly ref: Ref,
     readonly callback: Callback<T>
   ) {}
 }
@@ -125,7 +123,7 @@ export class Channel {
     type: ChannelMessageType<T>,
     callback: Callback<T>
   ): void {
-    this.listeners.add(new Listener(type, undefined, callback));
+    this.listeners.add(new Listener(type, callback));
   }
 
   off<T extends object>(
@@ -168,9 +166,7 @@ export class Channel {
     // todo: validate message
     if (messageObj) {
       for (const listener of this.listeners) {
-        if (listener.ref && listener.ref.deref() == null) {
-          this.listeners.delete(listener);
-        } else if (messageObj.name === listener.type.name) {
+        if (messageObj.name === listener.type.name) {
           try {
             listener.callback({
               sender,
