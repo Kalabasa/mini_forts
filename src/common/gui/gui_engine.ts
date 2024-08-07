@@ -117,7 +117,7 @@ ${formspecItems.join('\n')}\
 
       this.api.showFormspec(this.formName, formspec);
 
-      Logger.trace('Test formspec shown!', this.formName);
+      Logger.trace('Formspec shown!', this.formName);
       for (const line of formspec.split('\n')) {
         Logger.trace(line);
       }
@@ -140,9 +140,6 @@ ${formspecItems.join('\n')}\
   private renderNode(path: GUI.Node[], offset: Vector2D) {
     const node = path[path.length - 1];
     const { content } = node;
-    // Logger.trace('renderNode', getPathString(path));
-    // Logger.trace(offset, this.formName);
-    // debug(node);
 
     if (GUI.hasType(content, 'container')) {
       this.renderContainer(path, content, offset);

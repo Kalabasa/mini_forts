@@ -1,4 +1,3 @@
-import { BlockTag } from 'common/block/tag';
 import { globals } from 'common/globals';
 import { InteractionContext } from 'common/interaction/interaction_context';
 import {

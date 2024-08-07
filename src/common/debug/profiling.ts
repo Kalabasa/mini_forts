@@ -1,7 +1,11 @@
 import { CONFIG } from 'utils/config';
-import { Logger } from 'utils/logger';
+import { createLogger } from 'utils/logger';
 
 const enableProfiling = true;
+
+const timerStatReportCooldownUs = 30 * 1_000_000;
+const reportingThresholdMs = 10;
+const alertSpikeThresholdPercent = 0.15;
 
 export const Profiling =
   enableProfiling && CONFIG.isDev
@@ -16,43 +20,49 @@ export const Profiling =
 
 function noop() {}
 
-const timerStarts: Record<string, number> = {};
-const timerStats: Record<string, { count: number; average: number }> = {};
+const logger = createLogger('Profiling');
 
-const timerStatReportCooldown = 20 * 1_000_000; // microseconds
-let timerStatReportEnqueued = false;
-let timerStatReportTime = 0; // microseconds
+const timerStartsMs: Record<string, number> = {};
+const timerStats: Record<string, { count: number; averageMs: number }> = {};
+
+let timerStatReportTimeUs = 0;
 
 function startTimer(label: string): void {
-  timerStarts[label] = minetest.get_us_time();
+  timerStartsMs[label] = minetest.get_us_time();
 }
 
 function endTimer(label: string): void {
-  const ms = (minetest.get_us_time() - timerStarts[label]) / 1000;
-  Logger.trace(`${label}: ${ms} ms`);
-  delete timerStarts[label];
+  const durationMs = (minetest.get_us_time() - timerStartsMs[label]) / 1000;
+  delete timerStartsMs[label];
+
+  if (durationMs >= reportingThresholdMs) {
+    logger.trace(label, '-', durationMs, 'ms');
+  }
 
   const stats = timerStats[label];
-  if (stats) {
+  if (stats != null) {
     stats.count++;
-    stats.average =
-      stats.average * ((stats.count - 1) / stats.count) + ms / stats.count;
+    stats.averageMs =
+      stats.averageMs * ((stats.count - 1) / stats.count) +
+      durationMs / stats.count;
     reportTimerStats(label);
+
+    const diff = durationMs - stats.averageMs;
+    if (diff > 17 && diff > stats.averageMs * alertSpikeThresholdPercent) {
+      logger.warning(label, '-', diff, 'ms higher than average');
+    }
   } else {
-    timerStats[label] = { count: 1, average: ms };
+    timerStats[label] = { count: 1, averageMs: durationMs };
   }
 }
 
 function reportTimerStats(label: string) {
-  if (timerStatReportTime + timerStatReportCooldown < minetest.get_us_time()) {
+  if (
+    timerStatReportTimeUs + timerStatReportCooldownUs <
+    minetest.get_us_time()
+  ) {
     const stats = timerStats[label];
-    Logger.trace(`${label}: average ${stats.average} ms`);
-    timerStatReportTime = minetest.get_us_time();
-  } else if (!timerStatReportEnqueued) {
-    timerStatReportEnqueued = true;
-    minetest.after(timerStatReportCooldown / 1_000_000, () => {
-      reportTimerStats(label);
-      timerStatReportEnqueued = false;
-    });
+    logger.trace(label, '- avg', stats.averageMs, 'ms');
+    timerStatReportTimeUs = minetest.get_us_time();
   }
 }
