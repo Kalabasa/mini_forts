@@ -3,7 +3,7 @@ import { Locomotion } from 'server/entity/locomotion/locomotion';
 import { ReadonlyGameContext } from 'server/game/context';
 import { AddBlockEvent, RemoveBlockEvent } from 'server/game/events';
 import { throwError } from 'utils/error';
-import { Logger } from 'utils/logger';
+import { createLogger } from 'utils/logger';
 import { equalVectors, lerpVector, sqDist } from 'utils/math';
 import { PriorityQueue } from 'utils/priority_queue';
 
@@ -44,6 +44,8 @@ export class FindPath implements Path {
   protected partialPath: PathNode[] | undefined;
   protected coarsePathIndex: number;
   protected partialPathIndex: number;
+
+  protected readonly logger = createLogger(this.constructor.name);
 
   constructor(
     protected source: Vector3D,
@@ -313,8 +315,8 @@ export class FindPath implements Path {
 
     while (open.size > 0) {
       if (open.size > 700) {
-        Logger.error(
-          'Pathfinder: Too many nodes! (coarse)',
+        this.logger.error(
+          'Too many nodes! (coarse)',
           source,
           destinations
         );
@@ -450,8 +452,8 @@ export class FindPath implements Path {
 
     while (open.size > 0) {
       if (open.size > 300) {
-        Logger.error(
-          'Pathfinder: Too many nodes! (voxel)',
+        this.logger.error(
+          'Too many nodes! (voxel)',
           source,
           destinations
         );

@@ -7,7 +7,7 @@ export function checkRestrictions(
   let pass = true;
 
   for (const [key, message] of Object.entries(checks)) {
-    if (restrictions[key]) {
+    if (restrictions[key] === true) {
       Logger.error(`CSM '${key}' restricted!`, message);
       pass = false;
     }

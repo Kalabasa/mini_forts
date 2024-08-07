@@ -4,7 +4,6 @@ import { Player } from 'common/player/player';
 import { FindPath, Path } from 'server/ai/pathfinder/path';
 import { DebugMarker } from 'server/debug/debug_marker';
 import { Game } from 'server/game/game';
-import { Logger } from 'utils/logger';
 import { equalVectors, lerpVector } from 'utils/math';
 import { WeakRef } from 'utils/weak_ref';
 
@@ -70,7 +69,7 @@ export function registerDebugPath(
   });
 
   minetest.register_chatcommand('check_path_end', {
-    func: (playerName) => {
+    func: () => {
       if (!checkPathStart) {
         return $multi(false, 'Issue /check_path_start first!');
       }
@@ -91,7 +90,7 @@ export function registerDebugPath(
   });
 
   minetest.register_chatcommand('check_path_reset', {
-    func: (playerName) => {
+    func: () => {
       checkPathStart = undefined;
       checkPath = undefined;
       return $multi(true);
@@ -166,7 +165,7 @@ export class DebugPath extends FindPath {
   }
 
   enableDebug() {
-    Logger.trace(
+    this.logger.trace(
       'Enabling debug for path:',
       this.exists() ? this.getStep() : '?',
       '→',
