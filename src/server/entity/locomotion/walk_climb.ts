@@ -5,7 +5,8 @@ import { Path } from 'server/ai/pathfinder/path';
 import { Animation } from 'server/entity/animation';
 import { Entity } from 'server/entity/entity';
 import { Locomotion, PassableNodes } from 'server/entity/locomotion/locomotion';
-import { ZERO_V } from 'utils/math';
+import { Logger } from 'utils/logger';
+import { equalVectors, ZERO_V } from 'utils/math';
 import { predicate } from 'utils/tstl';
 
 type NodeCollision = Collision & { type: 'node' };
@@ -159,10 +160,20 @@ function create({
       }
     } else {
       const pos = normalizePathSource(entity.getVoxelPosition());
-      if (passableNodeCost(entity.locomotion.moveCost(next, pos))) {
+      if (
+        equalVectors(pos, next) ||
+        passableNodeCost(entity.locomotion.moveCost(next, pos))
+      ) {
         entity.targetLocation = next;
         return ActionResult.Ongoing;
       } else {
+        Logger.trace(
+          'followPath: stopping because impassable',
+          pos,
+          'to',
+          next
+        );
+        Logger.trace('  source:', path.getSource());
         entity.targetLocation = undefined;
         return ActionResult.Stopped;
       }

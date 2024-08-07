@@ -112,6 +112,9 @@ export class FindPath implements Path {
     if (this.partialPath != null) {
       for (const node of this.partialPath.slice(this.partialPathIndex)) {
         if (equalVectors(node.position, pos)) {
+          // Update source to allow resumption later
+          const currentStep = this.getStep();
+          if (currentStep) this.source = currentStep;
           this.computed = false;
           return;
         }
@@ -124,6 +127,9 @@ export class FindPath implements Path {
 
       for (const node of this.coarsePath.slice(this.coarsePathIndex)) {
         if (node.component.id === comp.id) {
+          // Update source to allow resumption later
+          const currentStep = this.getStep();
+          if (currentStep) this.source = currentStep;
           this.computed = false;
           return;
         }

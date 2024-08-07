@@ -87,7 +87,7 @@ export class Director {
     }
 
     if (this.eventTimer.updateAndCheck(dt)) {
-      this.maxEnemies = Math.round(
+      this.maxEnemies = 1; Math.round(
         Math.max(initialMaxEnemies, Math.log2(this.gameTime))
       );
 

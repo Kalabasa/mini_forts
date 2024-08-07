@@ -8,6 +8,7 @@ import { DecayPoofParticle } from 'server/particles/decay_poof/decay_poof';
 import { inRange } from 'utils/math';
 import { IntervalTimer } from 'utils/timer';
 import { Logger } from 'utils/logger';
+import { ActionResult } from 'server/ai/action_result';
 
 export abstract class EnemyEntityProperties extends EntityProperties {
   abstract readonly attackRange: number;
@@ -91,13 +92,13 @@ export abstract class EnemyEntityScript<
     } else if (!this.huntPath.exists()) {
       this.targetLocation = undefined;
       if (this.repathTimerPassed) {
+        Logger.trace("Enemy: Restart");
         this.repathTimer.reset();
         this.huntPath.restart(this.getVoxelPosition());
       }
     } else if (this.huntPath.hasNext()) {
       this.locomotion.followPath(this, this.huntPath);
     } else {
-      Logger.trace("end");
       this.targetLocation = this.huntLocation;
     }
 
