@@ -3,7 +3,6 @@ import { Task, TaskPriority } from "server/ai/colony/task";
 import { TaskManager } from "server/ai/colony/task_manager";
 import { DebugMarker } from "server/debug/debug_marker";
 import { CONFIG } from "utils/config";
-import { Logger } from "utils/logger";
 import { IntervalTimer } from "utils/timer";
 
 if (CONFIG.isDev) {
@@ -34,7 +33,7 @@ if (CONFIG.isDev) {
     },
   });
   minetest.register_chatcommand("taskmanager_step", {
-    func: (playerName, param) => {
+    func: () => {
       if (!instance) return $multi(false, "No instance");
       instance.stepFlag = true;
       return $multi(true);
@@ -76,42 +75,42 @@ export class DebugTaskManager extends TaskManager {
   }
 
   dump() {
-    Logger.trace("TaskManager dump");
-    Logger.trace("----------------");
+    this.logger.trace("TaskManager dump");
+    this.logger.trace("----------------");
 
-    Logger.trace(`Free agents (${this.freeAgents.size}):`);
+    this.logger.trace(`Free agents (${this.freeAgents.size}):`);
     for (const agent of this.freeAgents) {
-      Logger.trace(" ", agent, agent.getVoxelPosition());
+      this.logger.trace(" ", agent, agent.getVoxelPosition());
     }
 
-    Logger.trace(`Busy agents (${this.busyAgents.size}):`);
+    this.logger.trace(`Busy agents (${this.busyAgents.size}):`);
     for (const agent of this.busyAgents) {
-      Logger.trace(" ", agent, agent.getVoxelPosition());
+      this.logger.trace(" ", agent, agent.getVoxelPosition());
     }
 
     for (const priority of priorities) {
       const backlogTasks = this.backlogTasks[priority] as Set<DebugTask>;
-      Logger.trace(
+      this.logger.trace(
         `Backlog tasks [priority:${TaskPriority[priority]}] (${backlogTasks.size}):`
       );
       for (const task of backlogTasks) {
-        Logger.trace(" ", task);
+        this.logger.trace(" ", task);
       }
     }
 
     for (const priority of priorities) {
       const unassignedTasks = this.unassignedTasks[priority] as Set<DebugTask>;
-      Logger.trace(
+      this.logger.trace(
         `Unassigned tasks [priority:${TaskPriority[priority]}] (${unassignedTasks.size}):`
       );
       for (const task of unassignedTasks) {
-        Logger.trace(" ", task);
+        this.logger.trace(" ", task);
       }
     }
 
-    Logger.trace(`Assigned tasks(${this.assignedTasks.size}):`);
+    this.logger.trace(`Assigned tasks(${this.assignedTasks.size}):`);
     for (const task of this.assignedTasks) {
-      Logger.trace(" ", task);
+      this.logger.trace(" ", task);
     }
   }
 
@@ -163,7 +162,7 @@ export class DebugTaskManager extends TaskManager {
 
 type DebugTask = Task &
   (
-    | {}
+    | object
     | {
         position: Vector3D;
       }
@@ -179,7 +178,8 @@ function taskName(task: DebugTask): string | undefined {
 
 function prioritySuffix(priority: TaskPriority) {
   let n = "";
-  for (const _ of $range(1, priority)) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  for (const i of $range(1, priority)) {
     n += "*";
   }
   return n;

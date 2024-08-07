@@ -1,10 +1,9 @@
 import { Task, TaskPriority } from 'server/ai/colony/task';
 import { ReadonlyGameContext } from 'server/game/context';
 import { throwError } from 'utils/error';
-import { Logger } from 'utils/logger';
+import { createLogger, Logger } from 'utils/logger';
 import { IntervalTimer } from 'utils/timer';
 import { MinionAgent } from 'server/ai/colony/minion_agent';
-import { MoveTask } from 'server/ai/colony/tasks/move_task';
 
 // In order of priority
 const priorities = [TaskPriority.High, TaskPriority.Medium, TaskPriority.Low];
@@ -35,13 +34,15 @@ export class TaskManager {
   private buffer: number[] = [];
   private bufferStride: number;
 
+  protected readonly logger = createLogger(this.constructor.name);
+
   constructor(private readonly context: ReadonlyGameContext) {
     this.unassignedTasks = createPrioritySets<ManagedTask>();
     this.backlogTasks = createPrioritySets<ManagedTask>();
   }
 
   reset() {
-    Logger.info('Resetting TaskManager...');
+    this.logger.info('Resetting TaskManager...');
     this.freeAgents.clear();
     this.busyAgents.clear();
     this.assignedTasks.clear();
@@ -52,13 +53,13 @@ export class TaskManager {
   }
 
   addAgent(agent: ManagedAgent): void {
-    Logger.trace('addAgent', agent);
+    this.logger.trace('addAgent', agent);
     agent.setContext(this);
     this.freeAgents.add(agent);
   }
 
   removeAgent(agent: ManagedAgent): void {
-    Logger.trace('removeAgent', agent);
+    this.logger.trace('removeAgent', agent);
     if (agent.task) {
       this.moveTaskToUnassigned(agent.task);
       agent.task.agent = undefined;
@@ -70,14 +71,14 @@ export class TaskManager {
   }
 
   addTask(task: ManagedTask, priority: TaskPriority): void {
-    Logger.trace('addTask', task);
+    this.logger.trace('addTask', task);
     task.setContext(this, this.context);
     task.priority = priority;
     this.moveTaskToUnassigned(task);
   }
 
   removeTask(task: ManagedTask): void {
-    Logger.trace('removeTask', task);
+    this.logger.trace('removeTask', task);
     if (task.agent) {
       this.moveAgentToFree(task.agent);
       task.agent.task = undefined;
@@ -90,7 +91,7 @@ export class TaskManager {
   }
 
   unassignAgent(agent: ManagedAgent) {
-    Logger.trace('unassignAgent', agent);
+    this.logger.trace('unassignAgent', agent);
     if (agent.task) {
       if (!agent.task.reassignable) {
         this.removeTask(agent.task);
@@ -105,7 +106,7 @@ export class TaskManager {
   }
 
   unassignTask(task: ManagedTask) {
-    Logger.trace('unassignTask', task);
+    this.logger.trace('unassignTask', task);
     if (!task.reassignable) {
       this.removeTask(task);
       return;
@@ -121,7 +122,7 @@ export class TaskManager {
   }
 
   assign(agent: ManagedAgent, task: ManagedTask) {
-    Logger.trace('assign', agent, task);
+    this.logger.trace('assign', agent, task);
     agent.task = task;
     task.agent = agent;
     task.memory = {};
@@ -153,7 +154,7 @@ export class TaskManager {
     if (list.size < buildupLimit) {
       list.add(task);
     } else {
-      Logger.trace('Backlogging', task);
+      this.logger.trace('Backlogging', task);
       this.backlogTasks[task.priority].add(task);
     }
   }
@@ -195,7 +196,7 @@ export class TaskManager {
           const next: ManagedTask = i.value;
 
           if (!next.isStrictlyImpossible()) {
-            Logger.trace('Unbacklogging', next);
+            this.logger.trace('Unbacklogging', next);
             backlogTasks.delete(next);
             unassignedTasks.add(next);
 
@@ -221,7 +222,7 @@ export class TaskManager {
   }
 
   protected distributeTasks(agents: ManagedAgent[], tasks: ManagedTask[]) {
-    Logger.trace('distributeTasks', agents.length, tasks.length);
+    this.logger.trace('distributeTasks', agents.length, tasks.length);
 
     // make a matrix of agents ⨉ tasks for costs, with extra row and column for maximums
     const agentsLen = agents.length;
@@ -237,15 +238,6 @@ export class TaskManager {
         const agent = agents[i];
 
         const cost = task.estimateCost(agent as MinionAgent);
-        Logger.trace('Cost estimation:');
-        Logger.trace(' ', agent);
-        Logger.trace(' ', task);
-        Logger.trace('    isStrictlyImpossible?', task.isStrictlyImpossible());
-        if (task instanceof MoveTask) {
-          const path = task.getPath(agent as MinionAgent);
-          Logger.trace('    path exists?', path.exists());
-        }
-        Logger.trace(' ', cost);
 
         // place costs in the matrix
         const index = i + j * stride;
@@ -263,8 +255,6 @@ export class TaskManager {
       }
     }
 
-    this.traceBuffer('Costs');
-
     // DP: Each cell will become a score
     // In the resulting matrix, the higher cell score would be the better agent-task combination
     for (let j = 0; j < tasksLen; j++) {
@@ -277,8 +267,6 @@ export class TaskManager {
           this.buffer[index];
       }
     }
-
-    this.traceBuffer('DP');
 
     // find best agent-task combinations
     // the sum row and column will become a "marker" for spent agents or tasks
@@ -328,13 +316,13 @@ export class TaskManager {
       this.assign(bestAgent, bestTask);
     }
 
-    this.traceBuffer('End');
+    this.traceBuffer('Final');
 
-    Logger.trace('Task distribution end.');
+    this.logger.trace('Task distribution end.');
   }
 
   private traceBuffer(message: string) {
-    Logger.trace(`TaskManager: Task matrix - ${message}`);
+    this.logger.trace(`TaskManager: Task matrix - ${message}`);
     const negInf = { [Logger.String]: () => '∞' };
     const posInf = { [Logger.String]: () => '∞' };
     const row: unknown[] = [];
@@ -342,7 +330,7 @@ export class TaskManager {
       const score = this.buffer[i];
       row.push(Number.isFinite(score) ? score : score < 0 ? negInf : posInf);
       if (row.length === this.bufferStride) {
-        Logger.trace('  ', row);
+        this.logger.trace('  ', row);
         row.length = 0;
       }
     }
