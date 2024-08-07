@@ -1,6 +1,6 @@
 import { Locomotion } from 'server/entity/locomotion/locomotion';
 import { createArray } from 'utils/array';
-import { Logger } from 'utils/logger';
+import { createLogger, Logger } from 'utils/logger';
 import { equalVectors, floorDiv, vectorFloorDiv } from 'utils/math';
 import { Queue } from 'utils/queue';
 import { Volume } from 'utils/space';
@@ -39,6 +39,8 @@ export class NavMap {
 
   private nextPartition = 0;
 
+  protected readonly logger = createLogger(this.constructor.name);
+
   constructor(readonly locomotion: Locomotion) {
     this.adjacentCellDeltas = {};
     for (const [dir, delta] of this.locomotion.adjacentNodes.entries()) {
@@ -47,7 +49,7 @@ export class NavMap {
   }
 
   reset() {
-    Logger.info('Resetting NavMap...', this.locomotion.pathfinderID);
+    this.logger.info('Resetting...', this.locomotion.pathfinderID);
     this.cells.clear();
   }
 
@@ -146,7 +148,7 @@ export class NavMap {
     if (a.partition == null || b.partition == null) return;
     if (a.partition !== b.partition) return;
 
-    Logger.trace("recomputePartitionsFromUnreachable", a, b);
+    this.logger.trace("recomputePartitionsFromUnreachable", a, b);
 
     // try recomputing b
     b.partition = this.nextPartition++;
@@ -175,10 +177,10 @@ export class NavMap {
       frontiers[partition] = { active: true, count: 1 };
       activeFrontiers++;
 
-      Logger.trace('seed ', comp.cell, comp.id, partition);
+      this.logger.trace('seed ', comp.cell, comp.id, partition);
     }
 
-    Logger.trace('Frontiers (init):', activeFrontiers, frontiers);
+    this.logger.trace('Frontiers (init):', activeFrontiers, frontiers);
 
     // flood fill to set the new partition numbers
     while (queue.size > 0) {
@@ -195,13 +197,13 @@ export class NavMap {
             if (frontiers[comp.partition] != null) {
               // frontier intersection, only one should remain
               if (frontiers[comp.partition].active) {
-                Logger.trace('discard partition', comp.partition);
+                this.logger.trace('discard partition', comp.partition);
                 frontiers[comp.partition].active = false;
                 activeFrontiers--;
               }
             } else {
               // intersection with external partition
-              Logger.trace('merge with external partition', comp.partition);
+              this.logger.trace('merge with external partition', comp.partition);
               // stop current frontier
               frontiers[current.partition].active = false;
               // start new frontier based on external partition number
@@ -212,7 +214,7 @@ export class NavMap {
 
           comp.partition = current.partition;
 
-          Logger.trace(
+          this.logger.trace(
             'set partition (branch)',
             comp.cell,
             comp.id,
@@ -239,7 +241,7 @@ export class NavMap {
       }
     }
 
-    Logger.trace('Frontiers (end):', activeFrontiers, frontiers);
+    this.logger.trace('Frontiers (end):', activeFrontiers, frontiers);
   }
 
   protected getCellByVoxel<T extends boolean>(
@@ -299,7 +301,7 @@ export class NavCell {
   }
 
   invalidate() {
-    // Logger.trace('NavCell: Invalidate', this.volume);
+    // this.logger.trace('NavCell: Invalidate', this.volume);
     this.scanned = false;
     this.components.clear();
   }
@@ -567,20 +569,20 @@ export class NavCell {
       }
     });
 
-    // Logger.trace('Scan of', this.volume.min, '-', this.volume.max);
+    // this.logger.trace('Scan of', this.volume.min, '-', this.volume.max);
     // const blank = { [Logger.String]: () => '__' };
     // this.volume.forEachSlice({ y: 1 }, (slice) => {
-    //   Logger.trace('    slice', slice.min, '-', slice.max);
+    //   this.logger.trace('    slice', slice.min, '-', slice.max);
     //   slice.forEachSlice({ z: 1 }, (slice2) => {
     //     const row = [];
     //     slice2.forEach((pos) =>
     //       row.push(set[this.volume.index(pos.x, pos.y, pos.z)] ?? blank)
     //     );
-    //     Logger.trace('    ', row);
+    //     this.logger.trace('    ', row);
     //   });
     // });
 
-    // Logger.trace('Result:', this.components);
+    // this.logger.trace('Result:', this.components);
 
     return set;
   }

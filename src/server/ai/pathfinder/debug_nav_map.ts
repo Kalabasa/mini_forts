@@ -243,9 +243,9 @@ export class DebugNavMap extends NavMap {
         }
       }
     } catch (e) {
-      Logger.error(e);
+      this.logger.error(e);
     }
 
-    Logger.trace('debug_navmap:', cell.volume);
+    this.logger.trace('debug_navmap:', cell.volume);
   }
 }
