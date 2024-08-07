@@ -167,13 +167,6 @@ function create({
         entity.targetLocation = next;
         return ActionResult.Ongoing;
       } else {
-        Logger.trace(
-          'followPath: stopping because impassable',
-          pos,
-          'to',
-          next
-        );
-        Logger.trace('  source:', path.getSource());
         entity.targetLocation = undefined;
         return ActionResult.Stopped;
       }

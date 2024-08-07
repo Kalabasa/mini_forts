@@ -21,7 +21,7 @@ const timerStats: Record<string, { count: number; average: number }> = {};
 
 const timerStatReportCooldown = 20 * 1_000_000; // microseconds
 let timerStatReportEnqueued = false;
-let timerStatReportTime = 0;
+let timerStatReportTime = 0; // microseconds
 
 function startTimer(label: string): void {
   timerStarts[label] = minetest.get_us_time();
@@ -48,11 +48,11 @@ function reportTimerStats(label: string) {
     const stats = timerStats[label];
     Logger.trace(`${label}: average ${stats.average} ms`);
     timerStatReportTime = minetest.get_us_time();
-    timerStatReportEnqueued = false;
   } else if (!timerStatReportEnqueued) {
     timerStatReportEnqueued = true;
-    minetest.after(timerStatReportCooldown / 1_000_000, () =>
-      reportTimerStats(label)
-    );
+    minetest.after(timerStatReportCooldown / 1_000_000, () => {
+      reportTimerStats(label);
+      timerStatReportEnqueued = false;
+    });
   }
 }

@@ -92,7 +92,6 @@ export abstract class EnemyEntityScript<
     } else if (!this.huntPath.exists()) {
       this.targetLocation = undefined;
       if (this.repathTimerPassed) {
-        Logger.trace("Enemy: Restart");
         this.repathTimer.reset();
         this.huntPath.restart(this.getVoxelPosition());
       }

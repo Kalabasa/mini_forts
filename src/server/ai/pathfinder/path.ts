@@ -96,12 +96,10 @@ export class FindPath implements Path {
         }
       }
 
-      Logger.trace('exists? strictlyUnreachable', strictlyUnreachable);
       if (strictlyUnreachable) return false;
     }
 
     // Final check: Recompute whole path
-    Logger.trace('exists? Recompute whole path');
     this.ensureComputed();
     return this.coarsePath != null && this.partialPath != null;
   }
