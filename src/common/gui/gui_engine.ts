@@ -4,7 +4,7 @@ import { Renderer } from 'common/gui/renderer';
 import { Scaling } from 'common/gui/scaling';
 import { deepEqual } from 'utils/deep_equals';
 import { throwError } from 'utils/error';
-import { Logger } from 'utils/logger';
+import { createLogger } from 'utils/logger';
 
 const ZERO = { x: 0, y: 0 };
 
@@ -20,6 +20,8 @@ type FormHandle = {
   closeOnPress: boolean;
   renderCount: number;
 };
+
+const logger = createLogger('GUIEngine');
 
 export class GUIEngine implements Renderer {
   private hudHandles = new Map<string, HUDHandle>();
@@ -117,9 +119,9 @@ ${formspecItems.join('\n')}\
 
       this.api.showFormspec(this.formName, formspec);
 
-      Logger.trace('Formspec shown!', this.formName);
+      logger.trace('Formspec shown!', this.formName);
       for (const line of formspec.split('\n')) {
-        Logger.trace(line);
+        logger.trace(line);
       }
     }
 
@@ -520,13 +522,13 @@ function debug(
   firstPrefix: string = '╶── ',
   restPrefix: string = '    '
 ) {
-  Logger.trace(firstPrefix + 'type:', node.content.type);
-  Logger.trace(restPrefix + 'key:', node.key);
-  Logger.trace(restPrefix + 'layout:', node.position, node.size);
+  logger.trace(firstPrefix + 'type:', node.content.type);
+  logger.trace(restPrefix + 'key:', node.key);
+  logger.trace(restPrefix + 'layout:', node.position, node.size);
   const { children, ...props } = node.content.props as any;
-  Logger.trace(restPrefix + 'props:', props);
+  logger.trace(restPrefix + 'props:', props);
   if (node.content.childNodes.length > 0) {
-    Logger.trace(restPrefix + 'childNodes:');
+    logger.trace(restPrefix + 'childNodes:');
     const childNodes = node.content.childNodes;
     for (const [index, child] of childNodes.entries()) {
       const isLast = index === childNodes.length - 1;
@@ -535,6 +537,6 @@ function debug(
       debug(child, restPrefix + childFirstPrefix, restPrefix + childRestPrefix);
     }
   } else if (children) {
-    Logger.trace(restPrefix + 'props.children:', children);
+    logger.trace(restPrefix + 'props.children:', children);
   }
 }
