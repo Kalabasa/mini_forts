@@ -15,7 +15,7 @@ import { LoadMapChunkEvent } from 'server/game/events';
 import { Game } from 'server/game/game';
 import { ResourceType } from 'server/game/resources';
 import { ID } from 'utils/id';
-import { Logger } from 'utils/logger';
+import { createLogger } from 'utils/logger';
 import { hypot2, randomInt } from 'utils/math';
 import { IntervalTimer } from 'utils/timer';
 
@@ -28,6 +28,8 @@ const startingResources = {
 
 const maxEnemyBases = 3;
 const initialMaxEnemies = 2;
+
+const logger = createLogger("Director");
 
 // Gameplay logic
 export class Director {
@@ -44,7 +46,7 @@ export class Director {
   }
 
   reset(): void {
-    Logger.trace('Resetting Director...');
+    logger.trace('Resetting...');
     this.eventTimer.reset();
     this.enemyBases = [];
     this.enemies.clear();
@@ -81,7 +83,7 @@ export class Director {
 
     if (this.enemiesDisabled) {
       for (const enemy of this.enemies.values()) {
-        Logger.trace('Enemies disabled. Killing enemy', enemy);
+        logger.trace('Enemies disabled. Killing enemy', enemy);
         enemy.damage(Infinity);
       }
     }
@@ -123,7 +125,7 @@ export class Director {
   }
 
   disableEnemies() {
-    Logger.trace('Disable enemies');
+    logger.trace('Disable enemies');
     this.enemiesDisabled = true;
   }
 
@@ -163,7 +165,7 @@ export class Director {
   }
 
   private initWithMap() {
-    Logger.trace('Initial enemy bases:', this.enemyBases);
+    logger.trace('Initial enemy bases:', this.enemyBases);
     minetest.after(1, () => this.trySpawnEnemyBases());
   }
 
@@ -172,7 +174,7 @@ export class Director {
       const id = event.data[i];
       if (id === EnemyCrystalDef.registry.states.default.id) {
         this.enemyBases.push(vector.new(pos));
-        Logger.trace('Loaded enemy base:', pos);
+        logger.trace('Loaded enemy base:', pos);
       }
     });
   }
@@ -184,7 +186,7 @@ export class Director {
     const baseSpawnPos = this.findEnemyBaseSpawnPos();
     if (!baseSpawnPos) return;
 
-    Logger.trace('Spawning enemy base...', baseSpawnPos);
+    logger.trace('Spawning enemy base...', baseSpawnPos);
     this.enemyBases.push(baseSpawnPos);
 
     const baseUnderPos = vector.add(baseSpawnPos, { x: 0, y: -1, z: 0 });
@@ -250,7 +252,7 @@ export class Director {
         hypot2(homePos.x - pos.x, homePos.z - pos.z) <
         safeRadius * safeRadius
       ) {
-        Logger.trace('In safe radius:', pos);
+        logger.trace('In safe radius:', pos);
         pos = undefined;
       }
 
@@ -260,7 +262,7 @@ export class Director {
             hypot2(otherBase.x - pos.x, otherBase.z - pos.z) <
             neighborRadius * neighborRadius
           ) {
-            Logger.trace('In neighbor radius:', pos);
+            logger.trace('In neighbor radius:', pos);
             pos = undefined;
             break;
           }
@@ -271,7 +273,7 @@ export class Director {
         while (IsNode.solid(minetest.get_node(pos))) {
           pos.y++;
           if (pos.y > bounds.max.y) {
-            Logger.trace('Reached ceiling:', pos);
+            logger.trace('Reached ceiling:', pos);
             pos = undefined;
             break;
           }
@@ -282,7 +284,7 @@ export class Director {
         while (!IsNode.solid(minetest.get_node(pos))) {
           pos.y--;
           if (pos.y < bounds.min.y) {
-            Logger.trace('Reached floor:', pos);
+            logger.trace('Reached floor:', pos);
             pos = undefined;
             break;
           }
@@ -295,7 +297,7 @@ export class Director {
 
       if (pos) {
         if (!pathfinder.findPath(pos, homePos).exists()) {
-          Logger.trace('Unreachable:', pos);
+          logger.trace('Unreachable:', pos);
           pos = undefined;
         }
       }
