@@ -1,10 +1,9 @@
 import { WeakRef } from 'utils/weak_ref';
 
 type EventType<T> = {
-  new (...args: any[]): T;
+  new (...args: unknown[]): T;
 };
 
-type Ref = WeakRef<unknown> | undefined;
 type Callback<T> = (event: T) => void;
 
 class Listener<T> {
@@ -13,7 +12,7 @@ class Listener<T> {
 
 export class EventBus {
   // todo: listeners list per type
-  private listeners = new Set<Listener<any>>();
+  private listeners = new Set<Listener<unknown>>();
 
   on<T>(type: EventType<T>, callback: Callback<T>): void {
     this.listeners.add(new Listener(type, callback));
@@ -29,7 +28,11 @@ export class EventBus {
 
     const callback = (event: T) => {
       const objNow = ref?.deref();
-      if (objNow) method.call(objNow, event);
+      if (objNow) {
+        method.call(objNow, event);
+      } else {
+        this.off(type, callback);
+      }
     };
 
     this.on(type, callback);
@@ -43,7 +46,7 @@ export class EventBus {
     }
   }
 
-  emit<T extends { constructor: Function }>(event: T): void {
+  emit(event: object): void {
     for (const listener of this.listeners) {
       if (event instanceof listener.type) {
         listener.callback(event);

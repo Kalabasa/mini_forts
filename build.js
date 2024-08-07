@@ -98,6 +98,7 @@ export default {
   mode: '${mode || ''}',
   isProd: ${mode === MODE_PROD},
   isDev: ${mode === MODE_DEV},
+  isTest: false,
 };\
 `;
 }

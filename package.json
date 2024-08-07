@@ -24,7 +24,7 @@
     "clean": "rimraf build dist",
     "build": "cross-env NODE_ENV=prod node build.js",
     "build-dev": "cross-env NODE_ENV=dev node build.js",
-    "test": "jest"
+    "test": "node --expose-gc node_modules/.bin/jest"
   },
   "jest": {
     "preset": "ts-jest",
@@ -33,6 +33,9 @@
       "node_modules",
       "src"
     ],
+    "moduleNameMapper": {
+      "conf.generated": "conf.testing"
+    },
     "globals": {
       "ts-jest": {
         "tsconfig": "tsconfig.test.json"

@@ -1,6 +1,8 @@
+import { CONFIG } from './config';
+
 const weakValuesMetatable = { __mode: 'v' };
 
-export class WeakRef<T> {
+class LuaWeakRef<T extends WeakKey>  {
   private readonly ref: { content: T };
 
   constructor(target: T) {
@@ -16,6 +18,8 @@ export class WeakRef<T> {
     return this.ref.content;
   }
 }
+
+export const WeakRef = CONFIG.isTest ? globalThis.WeakRef : LuaWeakRef;
 
 export class WeakValueMap<K extends keyof any, T> {
   private readonly map: Partial<Record<K, T>>;

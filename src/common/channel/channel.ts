@@ -1,6 +1,6 @@
 import { CONFIG } from 'utils/config';
 import { throwError } from 'utils/error';
-import { Logger } from 'utils/logger';
+import { createLogger, Logger } from 'utils/logger';
 import { Queue } from 'utils/queue';
 import { WeakRef } from 'utils/weak_ref';
 
@@ -46,10 +46,11 @@ enum ModChannelSignal {
 const channels = new Map<string, Channel>();
 
 export class Channel {
+  private logger: Logger;
   private modChannel: ModChannel | undefined;
   private connected = false;
   private queue = new Queue<string>();
-  private listeners = new Set<Listener<any>>();
+  private listeners = new Set<Listener<object>>();
 
   static initialize() {
     if (CONFIG.isClient) {
@@ -92,7 +93,9 @@ export class Channel {
     return newChannel;
   }
 
-  private constructor(readonly channelName: string) {}
+  private constructor(readonly channelName: string) {
+    this.logger = createLogger(`Channel(${channelName})`);
+  }
 
   join(): void {
     if (this.modChannel) throwError('Already joined!');
@@ -126,14 +129,6 @@ export class Channel {
     this.listeners.add(new Listener(type, undefined, callback));
   }
 
-  onFor<T extends object>(
-    type: ChannelMessageType<T>,
-    ref: unknown,
-    callback: Callback<T>
-  ): void {
-    this.listeners.add(new Listener(type, new WeakRef(ref), callback));
-  }
-
   off<T extends object>(
     type: ChannelMessageType<T>,
     callback: Callback<T>
@@ -145,7 +140,7 @@ export class Channel {
     }
   }
 
-  emit<T extends ChannelMessage<any>>(message: T): void {
+  emit<T extends ChannelMessage<object>>(message: T): void {
     this.send({
       name: message.constructor.name,
       p: message.properties,
@@ -156,7 +151,7 @@ export class Channel {
     const text = minetest.write_json(message);
 
     if (this.connected) {
-      Logger.trace('Sending', text);
+      this.logger.trace('Sending', text);
       this.modChannel!.send_all(text);
     } else {
       this.queue.push(text);
@@ -164,17 +159,17 @@ export class Channel {
   }
 
   private onReceiveMessage(message: string, sender: string) {
-    let messageObj: FormattedMessage<unknown> | undefined;
+    let messageObj: FormattedMessage<object> | undefined;
     try {
-      messageObj = minetest.parse_json<FormattedMessage<unknown>>(message);
+      messageObj = minetest.parse_json<FormattedMessage<object>>(message);
     } catch (e) {
-      Logger.error('Error parsing message from ' + sender, message);
+      this.logger.error('Error parsing message from ' + sender, message);
     }
 
     // todo: validate message
     if (messageObj) {
       for (const listener of this.listeners) {
-        if (listener.ref && !listener.ref.deref()) {
+        if (listener.ref && listener.ref.deref() == null) {
           this.listeners.delete(listener);
         } else if (messageObj.name === listener.type.name) {
           try {
@@ -183,8 +178,8 @@ export class Channel {
               properties: messageObj.p,
             });
           } catch (e) {
-            Logger.error('Error processing message from ' + sender, message);
-            Logger.error(e);
+            this.logger.error('Error processing message from ' + sender, message);
+            this.logger.error(e);
           }
         }
       }
@@ -194,7 +189,7 @@ export class Channel {
   private flush(): void {
     while (this.queue.size > 0) {
       const text = this.queue.pop()!;
-      Logger.trace('Sending', text);
+      this.logger.trace('Sending', text);
       this.modChannel!.send_all(text);
     }
   }
