@@ -2,7 +2,6 @@ import { CONFIG } from 'utils/config';
 import { throwError } from 'utils/error';
 import { createLogger, Logger } from 'utils/logger';
 import { Queue } from 'utils/queue';
-import { WeakRef } from 'utils/weak_ref';
 
 export abstract class ChannelMessage<T extends object> {
   constructor(readonly properties: T) {}
@@ -56,7 +55,7 @@ export class Channel {
     if (CONFIG.isClient) {
       minetest.register_on_modchannel_signal((channelName, signal) => {
         Logger.trace(
-          'Received modchannel signal',
+          'channel: Received signal',
           channelName,
           ModChannelSignal[signal]
         );
@@ -67,7 +66,7 @@ export class Channel {
           channel.onConnect();
         } else {
           Logger.error(
-            `Channel '${channelName}' received signal:`,
+            `channel: '${channelName}' received signal:`,
             ModChannelSignal[signal]
           );
           channel.onDisconnect();
@@ -76,7 +75,7 @@ export class Channel {
     }
 
     minetest.register_on_modchannel_message((channelName, sender, message) => {
-      Logger.trace('Received modchannel message', sender, message);
+      Logger.trace('channel: Received modchannel message', sender, message);
       const channel = channels.get(channelName);
       if (!channel) return;
 
