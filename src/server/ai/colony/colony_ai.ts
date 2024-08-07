@@ -17,10 +17,12 @@ import {
 import { CONFIG } from 'utils/config';
 import { throwError } from 'utils/error';
 import { ID } from 'utils/id';
-import { Logger } from 'utils/logger';
+import { createLogger } from 'utils/logger';
 import { equalVectors } from 'utils/math';
 import { IntervalTimer } from 'utils/timer';
 import { MinionAgent } from 'server/ai/colony/minion_agent';
+
+const logger = createLogger("ColonyAI");
 
 export class ColonyAI {
   private readonly contextDelegate = new ReadonlyGameContextDelegate();
@@ -48,7 +50,7 @@ export class ColonyAI {
   }
 
   reset() {
-    Logger.info('Resetting ColonyAI...');
+    logger.info('Resetting...');
     this.agents.clear();
     this.enemies.clear();
     this.dens.clear();
@@ -156,10 +158,10 @@ export class ColonyAI {
 
       const key = posKey(operable.position);
       const task = this.operateTasks.get(key);
-      const isOperating = task != undefined && !task.ended;
+      const isOperating = task != null && !task.ended;
 
-      if (isOperating !== (shouldOperatePriority != undefined)) {
-        if (shouldOperatePriority) {
+      if (isOperating !== (shouldOperatePriority != null)) {
+        if (shouldOperatePriority != null) {
           this.enlistOperable(operable, shouldOperatePriority);
         } else {
           this.delistOperable(operable);
@@ -179,7 +181,7 @@ export class ColonyAI {
   }
 
   private delistOperable(operable: Operable) {
-    Logger.trace('Disengaging operable...', operable);
+    logger.trace('Disengaging operable...', operable);
     this.removeOperateTask(posKey(operable.position));
   }
 
@@ -274,7 +276,7 @@ export class ColonyAI {
   private removeOperateTask(key: string) {
     const task = this.operateTasks.get(key);
     if (task) {
-      Logger.trace('Ending OperateTask...', task);
+      logger.trace('Ending OperateTask...', task);
       task.end();
       this.operateTasks.delete(key);
     }
