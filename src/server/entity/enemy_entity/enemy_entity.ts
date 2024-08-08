@@ -7,8 +7,6 @@ import { Locomotion } from 'server/entity/locomotion/locomotion';
 import { DecayPoofParticle } from 'server/particles/decay_poof/decay_poof';
 import { inRange } from 'utils/math';
 import { IntervalTimer } from 'utils/timer';
-import { Logger } from 'utils/logger';
-import { ActionResult } from 'server/ai/action_result';
 
 export abstract class EnemyEntityProperties extends EntityProperties {
   abstract readonly attackRange: number;

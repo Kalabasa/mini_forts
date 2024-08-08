@@ -70,7 +70,7 @@ export function inRange(
   b: Vector3D,
   maxDistance: number
 ): boolean {
-  return sqDist(a, b) <= maxDistance;
+  return sqDist(a, b) <= maxDistance * maxDistance;
 }
 
 export function lerpVector(a: Vector3D, b: Vector3D, t: number): Vector3D {

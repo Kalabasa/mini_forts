@@ -4,7 +4,7 @@ import { EnemyEntityProperties } from 'server/entity/enemy_entity/enemy_entity';
 import { Faction } from 'server/entity/faction';
 import { PassableNodes } from 'server/entity/locomotion/locomotion';
 import { WalkClimbLocomotion } from 'server/entity/locomotion/walk_climb';
-import { defaultCollisionBox } from 'server/entity/entity';
+import { defaultCollisionBox, PersistentEntity } from 'server/entity/entity';
 
 export class BeetleProperties extends EnemyEntityProperties {
   entityName = 'beetle';
@@ -12,8 +12,8 @@ export class BeetleProperties extends EnemyEntityProperties {
 
   override health = 10;
 
-  attackRange = Math.sqrt(2);
-  attackInterval = 1;
+  attackRange = 1;
+  attackInterval = 0.8;
 
   animations = Animation.createMap({
     stand: {
@@ -44,8 +44,8 @@ export class BeetleProperties extends EnemyEntityProperties {
 
   locomotion = WalkClimbLocomotion.create({
     passableNodes: PassableNodes.BreakBuildings,
-    walkSpeed: 1,
-    climbSpeed: 1,
+    walkSpeed: 0.8,
+    climbSpeed: 0.05,
     animationMap: this.animations,
   });
 
@@ -57,4 +57,9 @@ export class BeetleProperties extends EnemyEntityProperties {
     collide_with_objects: false,
     collisionbox: defaultCollisionBox,
   };
+
+  override persist(dst: PersistentEntity, src: PersistentEntity) {
+    super.persist(dst, src);
+    dst['carrying'] = src['carrying'];
+  }
 }

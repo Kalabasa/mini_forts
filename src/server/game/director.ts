@@ -5,6 +5,7 @@ import { CoreCrystalBaseDef } from 'server/block/core_crystal_base/def';
 import { DenDef } from 'server/block/den/def';
 import { EnemyCrystalDef } from 'server/block/enemy_crystal/def';
 import { EnemyCrystalBaseDef } from 'server/block/enemy_crystal_base/def';
+import { BeetleDef } from 'server/entity/beetle/def';
 import { EnemyEntity } from 'server/entity/enemy_entity/enemy_entity';
 import { Locomotion } from 'server/entity/locomotion/locomotion';
 import { MinionDef } from 'server/entity/minion/def';
@@ -29,7 +30,7 @@ const startingResources = {
 const maxEnemyBases = 3;
 const initialMaxEnemies = 2;
 
-const logger = createLogger("Director");
+const logger = createLogger('Director');
 
 // Gameplay logic
 export class Director {
@@ -89,7 +90,7 @@ export class Director {
     }
 
     if (this.eventTimer.updateAndCheck(dt)) {
-      this.maxEnemies = 1; Math.round(
+      this.maxEnemies = Math.round(
         Math.max(initialMaxEnemies, Math.log2(this.gameTime))
       );
 
@@ -133,7 +134,8 @@ export class Director {
     if (this.enemies.size >= this.maxEnemies) return;
     if (this.enemyBases.length === 0) return;
 
-    const type = Math.random() < 0.08 ? SnailDef : SlugDef;
+    const type = BeetleDef;
+    Math.random() < 0.08 ? SnailDef : SlugDef;
 
     const basePos = this.enemyBases[randomInt(0, this.enemyBases.length - 1)];
 

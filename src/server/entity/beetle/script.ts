@@ -3,6 +3,8 @@ import { EnemyEntityScript } from 'server/entity/enemy_entity/enemy_entity';
 import { Entity } from 'server/entity/entity';
 
 export class BeetleScript extends EnemyEntityScript<BeetleProperties> {
+  carrying = false;
+
   override update(dt: number): void {
     if (this.collisionInfo.touching_ground) {
       if (this.siege()) return;
@@ -13,7 +15,7 @@ export class BeetleScript extends EnemyEntityScript<BeetleProperties> {
   protected override attackEntity(entity: Entity): void {
     this.animation = this.animations.attack;
     this.restartAnimation();
-    entity.damage(2, this);
+    entity.damage(1, this);
   }
 
   protected override attackNode(position: Vector3D) {
