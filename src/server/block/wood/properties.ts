@@ -20,7 +20,7 @@ export class WoodProperties extends BlockProperties {
 
   override resource = {
     type: ResourceType.Wood,
-    amount: 5,
+    amount: 8,
   };
   override miningResource = {
     type: ResourceType.Wood,

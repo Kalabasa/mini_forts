@@ -6,7 +6,12 @@ import { DenDef } from 'server/block/den/def';
 import { EnemyCrystalDef } from 'server/block/enemy_crystal/def';
 import { EnemyCrystalBaseDef } from 'server/block/enemy_crystal_base/def';
 import { BeetleDef } from 'server/entity/beetle/def';
-import { EnemyEntity } from 'server/entity/enemy_entity/enemy_entity';
+import {
+  EnemyEntity,
+  EnemyEntityProperties,
+  EnemyEntityScript,
+} from 'server/entity/enemy_entity/enemy_entity';
+import { EntityDefinition } from 'server/entity/entity';
 import { Locomotion } from 'server/entity/locomotion/locomotion';
 import { MinionDef } from 'server/entity/minion/def';
 import { MinionScript } from 'server/entity/minion/script';
@@ -28,7 +33,7 @@ const startingResources = {
 };
 
 const maxEnemyBases = 3;
-const initialMaxEnemies = 2;
+const initialMaxEnemies = 1;
 
 const logger = createLogger('Director');
 
@@ -67,6 +72,7 @@ export class Director {
     const initialMinions = [
       { x: homePos.x - 1, y: homePos.y, z: homePos.z },
       { x: homePos.x + 1, y: homePos.y, z: homePos.z },
+      { x: homePos.x, y: homePos.y, z: homePos.z - 1 },
       { x: homePos.x, y: homePos.y, z: homePos.z + 1 },
     ];
 
@@ -91,7 +97,7 @@ export class Director {
 
     if (this.eventTimer.updateAndCheck(dt)) {
       this.maxEnemies = Math.round(
-        Math.max(initialMaxEnemies, Math.log2(this.gameTime))
+        Math.max(initialMaxEnemies, 0.6 * Math.log2(this.gameTime))
       );
 
       this.cleanupEnemyEntities();
@@ -134,8 +140,7 @@ export class Director {
     if (this.enemies.size >= this.maxEnemies) return;
     if (this.enemyBases.length === 0) return;
 
-    const type = BeetleDef;
-    Math.random() < 0.08 ? SnailDef : SlugDef;
+    const type = this.getEnemyTypeForSpawn();
 
     const basePos = this.enemyBases[randomInt(0, this.enemyBases.length - 1)];
 
@@ -164,6 +169,27 @@ export class Director {
       possibleLocations[randomInt(0, possibleLocations.length - 1)]
     );
     this.enemies.set(enemy.id, enemy);
+  }
+
+  private getEnemyTypeForSpawn(): EntityDefinition<
+    EnemyEntityProperties,
+    EnemyEntityScript
+  > {
+    const proportions = [
+      [SlugDef, 100],
+      [SnailDef, 8 + 4 * Math.sin(this.gameTime * 0.002)],
+      [BeetleDef, 1 + Math.sin(this.gameTime * 0.007)],
+    ] as const;
+
+    const total = proportions.reduce((sum, [, prop]) => sum + prop, 0);
+    const choice = Math.random() * total;
+    for (let i = 0, p = 0; i < proportions.length; i++) {
+      const [def, prop] = proportions[i];
+      p += prop;
+      if (p >= choice) return def;
+    }
+
+    return proportions[proportions.length - 1][0];
   }
 
   private initWithMap() {

@@ -3,14 +3,14 @@ import {
   BlockCallbacks,
   BlockDefinition,
   BlockProperties,
-  BlockScript
+  BlockScript,
 } from 'server/block/block';
 import { MineableBlockState } from 'server/block/extractor/constants';
 import { ExtractorProperties } from 'server/block/extractor/properties';
 import { ResourceType } from 'server/game/resources';
 import { equalVectors } from 'utils/math';
 
-const mineTime = 90;
+const mineTime = 60;
 const harvestTime = 2;
 
 const resourceTypeToInitialState = {
@@ -35,7 +35,7 @@ export class ExtractorScript
   }
 
   override activate() {
-    if (!this.resourceType) {
+    if (this.resourceType == null) {
       this.resourceType = this.findResourceType();
     }
 
@@ -48,7 +48,7 @@ export class ExtractorScript
   }
 
   onTimer() {
-    if (!this.resourceType) return;
+    if (this.resourceType == null) return;
 
     if (this.isRipe()) {
       this.finishHarvest();
@@ -73,7 +73,7 @@ export class ExtractorScript
   }
 
   finishHarvest() {
-    if (!this.resourceType || !this.isRipe()) return;
+    if (this.resourceType == null || !this.isRipe()) return;
 
     let amount = 0;
     let depleted = false;
@@ -124,7 +124,7 @@ export class ExtractorScript
 
   private setRipe(ripe: boolean) {
     if (this.isRipe() !== ripe) {
-      if (this.resourceType) {
+      if (this.resourceType != null) {
         this.changeState(getState(this.resourceType, ripe));
       }
       this.getData().ripeExtractor = ripe;
@@ -132,7 +132,7 @@ export class ExtractorScript
   }
 
   private takeRoot() {
-    if (!this.resourceType) return;
+    if (this.resourceType == null) return;
 
     const y = this.position.y - 1;
     for (const x of $range(this.position.x - 1, this.position.x + 1)) {
@@ -156,7 +156,7 @@ export class ExtractorScript
   private getMineableBlock(
     groundPos: Vector3D
   ): BlockDefinition<MineableBlockProperties> | undefined {
-    if (!this.resourceType) return undefined;
+    if (this.resourceType == null) return undefined;
 
     const abovePos = {
       x: groundPos.x,
@@ -215,7 +215,7 @@ function isMineable(
 
 function getState(resourceType: ResourceType | undefined, ripe: boolean) {
   const ripeSuffix = ripe ? 'Ripe' : '';
-  return resourceType
+  return resourceType != null
     ? concat(resourceTypeToInitialState[resourceType], ripeSuffix)
     : 'default';
 }

@@ -20,7 +20,7 @@ export class RockProperties extends BlockProperties {
 
   override resource = {
     type: ResourceType.Stone,
-    amount: 5,
+    amount: 12,
   };
   override miningResource = {
     type: ResourceType.Stone,

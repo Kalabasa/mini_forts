@@ -149,10 +149,12 @@ export abstract class EnemyEntityScript<
     return false;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   protected attackEntity(entity: Entity): void {
     // For override
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   protected attackNode(position: Vector3D): void {
     // For override
   }

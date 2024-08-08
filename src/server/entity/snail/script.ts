@@ -2,6 +2,8 @@ import { Animation } from 'server/entity/animation';
 import { EnemyEntityScript } from 'server/entity/enemy_entity/enemy_entity';
 import { Entity, EntityDamage } from 'server/entity/entity';
 import { SnailProperties } from 'server/entity/snail/properties';
+import { ResourceType } from 'server/game/resources';
+import { randomInt } from 'utils/math';
 import { CountdownTimer } from 'utils/timer';
 
 const hideTime = 0.7;
@@ -42,6 +44,13 @@ export class SnailScript extends EnemyEntityScript<SnailProperties> {
     if (blockRef) {
       blockRef.damage(2, this);
     }
+  }
+
+  override onDecay(): void {
+    this.context.addResource(
+      { type: ResourceType.Metal, amount: randomInt(4, 6) },
+      this.objRef.get_pos()
+    );
   }
 
   override onDamage(damage: EntityDamage) {
