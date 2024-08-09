@@ -19,7 +19,7 @@ export enum ShotStage {
 export class BallistaHeadScript extends BlockEntityScript<BallistaHeadProperties> {
   operational = false;
   private shotStage: ShotStage = ShotStage.Idle;
-  private shotTimer: CountdownTimer;
+  private shotTimer: CountdownTimer | undefined;
 
   override activate() {
     this.animation = this.animations.idle;
@@ -65,13 +65,13 @@ export class BallistaHeadScript extends BlockEntityScript<BallistaHeadProperties
           this.animation = this.animations.charge;
         }
       } else if (this.shotStage === ShotStage.Charge) {
-        if (this.shotTimer.updateAndCheck(dt)) {
+        if (this.shotTimer!.updateAndCheck(dt)) {
           this.shotStage = ShotStage.Hold;
           this.shotTimer = new CountdownTimer(this.properties.holdTime);
           this.animation = this.animations.hold;
         }
       } else if (this.shotStage === ShotStage.Hold) {
-        if (this.shotTimer.updateAndCheck(dt)) {
+        if (this.shotTimer!.updateAndCheck(dt)) {
           this.context.subtractResource(this.properties.ammunition, pos);
 
           addShotParticles(pos, target.objRef.get_pos());
@@ -94,7 +94,7 @@ export class BallistaHeadScript extends BlockEntityScript<BallistaHeadProperties
     }
 
     if (this.shotStage === ShotStage.Release) {
-      if (this.shotTimer.updateAndCheck(dt)) {
+      if (this.shotTimer!.updateAndCheck(dt)) {
         this.shotStage = ShotStage.Idle;
         this.shotTimer = new CountdownTimer(this.properties.cooldownTime);
         this.animation = this.animations.idle;
@@ -179,9 +179,7 @@ export class BallistaHeadScript extends BlockEntityScript<BallistaHeadProperties
     const dir = vector.direction(origin, target);
 
     // fire arrow from tip
-    const tip = vector.new(origin);
-    tip.x += dir.x * 0.55;
-    tip.y += dir.y * 0.55;
+    const tip = vector.offset(origin, dir.x * 0.75, 0, dir.z * 0.75);
 
     const raycast = Raycast(tip, target, false, false);
 
@@ -191,7 +189,7 @@ export class BallistaHeadScript extends BlockEntityScript<BallistaHeadProperties
         if (IsNode.solid(nodeUnder)) {
           const nodeAbove = minetest.get_node(pointed.above);
 
-          if (IsNode.solid(nodeAbove)) return false;
+          if (!IsNode.shootableThrough(nodeAbove)) return false;
 
           // can phase through 0.25 thick walls
           const forward = {

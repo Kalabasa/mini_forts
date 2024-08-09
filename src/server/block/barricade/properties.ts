@@ -1,6 +1,5 @@
 import { BlockTag } from 'common/block/tag';
 import { tex } from 'resource_id';
-import { BlockProperties } from 'server/block/block';
 import { createDamagedBlockProperties } from 'server/block/damaged_block/damaged_block';
 import { GhostDefinition } from 'server/block/ghost';
 import { Resource, ResourceType } from 'server/game/resources';
@@ -43,6 +42,7 @@ export class BarricadeProperties extends DamagedProperties {
 
   override tags = this.defineTags({
     BreakableBuilding: BlockTag.BreakableBuildingTrue,
+    ShootableThrough: BlockTag.ShootableThroughTrue,
   });
 
   override ghost: GhostDefinition = {

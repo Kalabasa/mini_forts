@@ -26,6 +26,9 @@ const schema = {
     OpenDenMenu: 2,
     OpenBallistaMenu: 3,
   },
+  ShootableThrough: {
+    True: 1,
+  },
   PassableDoor: {
     True: 1,
   },

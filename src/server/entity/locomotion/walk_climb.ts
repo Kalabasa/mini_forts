@@ -161,7 +161,8 @@ function create({
       const pos = normalizePathSource(entity.getVoxelPosition());
       if (
         equalVectors(pos, next) ||
-        passableNodeCost(entity.locomotion.moveCost(next, pos))
+        entity.locomotion.moveCost(pos) === Infinity ||
+        entity.locomotion.moveCost(next, pos) < Infinity
       ) {
         entity.targetLocation = next;
         return ActionResult.Ongoing;
@@ -181,7 +182,7 @@ function create({
     const delta = targetLocation && vector.subtract(targetLocation, entityPos);
     const deltaH = delta && { x: delta.x, y: 0, z: delta.z };
 
-    if (!delta || !deltaH || vector.length(deltaH) < walkSpeed * dt * 0.6) {
+    if (!delta || !deltaH || vector.length(deltaH) < walkSpeed * dt * 0.4) {
       if (entity.collisionInfo.touching_ground) {
         if (
           entity.animation === animationMap.walk ||
@@ -245,11 +246,11 @@ function create({
       } else {
         entity.animation = animationMap.fall;
         const velocity = entity.objRef.get_velocity();
-        const targetVelocity = vector.multiply(dirH, Math.min(0.5, walkSpeed));
+        const targetVelocity = vector.multiply(dirH, Math.min(0.3, walkSpeed));
         const deltaH = vector.subtract(targetVelocity, velocity);
         deltaH.y = 0;
         entity.objRef.set_velocity(
-          vector.add(velocity, vector.multiply(deltaH, 0.2))
+          vector.add(velocity, vector.multiply(deltaH, 0.4))
         );
       }
     }
