@@ -5,7 +5,7 @@ const eslint = require('@eslint/js');
 const tseslint = require('typescript-eslint');
 
 module.exports = tseslint.config({
-  extends: [eslint.configs.recommended, ...tseslint.configs.recommended],
+  extends: [tseslint.configs.base],
   rules: {
     // Avoid mixing up falsy concepts in Lua
     '@typescript-eslint/strict-boolean-expressions': [

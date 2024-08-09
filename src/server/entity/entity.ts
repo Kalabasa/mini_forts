@@ -141,8 +141,8 @@ export class EntityScript<P extends EntityProperties = EntityProperties> {
     }
   }
 
-  private set serializedHealth(value: number | 'inf') {
-    if (value === 'inf') {
+  private set serializedHealth(value: unknown) {
+    if (value === 'inf' || typeof value !== 'number') {
       this._health = Infinity;
     } else {
       this._health = value;
@@ -182,11 +182,7 @@ export class EntityScript<P extends EntityProperties = EntityProperties> {
     this.collisionInfo = moveResult;
 
     if (this._alive) {
-      this.locomotion.update(
-        dt,
-        this,
-        this.preciseTargetLocation
-      );
+      this.locomotion.update(dt, this, this.preciseTargetLocation);
     }
 
     this.update(dt);

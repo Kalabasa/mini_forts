@@ -1,3 +1,4 @@
+import { IsNode } from 'common/block/is_node';
 import { getNodeSupport } from 'common/block/physics';
 import { BlockTag } from 'common/block/tag';
 import { ActionResult } from 'server/ai/action_result';
@@ -179,9 +180,36 @@ function create({
     targetLocation: Vector3D | undefined
   ): void => {
     const entityPos = entity.objRef.get_pos();
+    const entityVoxelPos = vector.round(entityPos);
+
     const delta = targetLocation && vector.subtract(targetLocation, entityPos);
     const deltaH = delta && { x: delta.x, y: 0, z: delta.z };
 
+    // slide off unpathable
+    if (entity.collisionInfo.touching_ground) {
+      const below = vector.offset(entityVoxelPos, 0, -1, 0);
+      const belowNode = minetest.get_node(below);
+      if (
+        IsNode.solid(belowNode) &&
+        getNodeSupport(belowNode) !== BlockTag.PhysicsSupportAll
+      ) {
+        entity.animation = animationMap.fall;
+        const dirH = vector.direction(
+          vector.offset(
+            entityVoxelPos,
+            Math.random() * 0.01,
+            0,
+            Math.random() * 0.01
+          ),
+          targetLocation ?? entityPos
+        );
+        dirH.y = 0;
+        entity.objRef.set_velocity(vector.multiply(dirH, walkSpeed));
+        return;
+      }
+    }
+
+    // stop if reached target
     if (!delta || !deltaH || vector.length(deltaH) < walkSpeed * dt * 0.4) {
       if (entity.collisionInfo.touching_ground) {
         if (

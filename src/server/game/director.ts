@@ -12,6 +12,7 @@ import {
   EnemyEntityScript,
 } from 'server/entity/enemy_entity/enemy_entity';
 import { EntityDefinition } from 'server/entity/entity';
+import { Faction } from 'server/entity/faction';
 import { Locomotion } from 'server/entity/locomotion/locomotion';
 import { MinionDef } from 'server/entity/minion/def';
 import { MinionScript } from 'server/entity/minion/script';
@@ -90,14 +91,18 @@ export class Director {
 
     if (this.enemiesDisabled) {
       for (const enemy of this.enemies.values()) {
-        logger.trace('Enemies disabled. Killing enemy', enemy);
-        enemy.damage(Infinity);
+        logger.trace('Enemies disabled. Removing enemy', enemy);
+        enemy.objRef.remove();
       }
     }
 
     if (this.eventTimer.updateAndCheck(dt)) {
+      const defenderCount = this.game.entityStore.count({
+        volume: this.game.getStageBounds(),
+        faction: Faction.Defenders,
+      });
       this.maxEnemies = Math.round(
-        Math.max(initialMaxEnemies, 0.6 * Math.log2(this.gameTime))
+        Math.max(initialMaxEnemies, 0.2 * defenderCount * Math.log2(this.gameTime))
       );
 
       this.cleanupEnemyEntities();

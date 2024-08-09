@@ -59,7 +59,7 @@ export class SnailScript extends EnemyEntityScript<SnailProperties> {
         this.hideTimer.reset(0.3);
       }
 
-      damage.reduce(damage.amount);
+      damage.reduce(Math.min(2, damage.amount));
       this.animateFlash();
     } else {
       minetest.after(0.1, () => {
