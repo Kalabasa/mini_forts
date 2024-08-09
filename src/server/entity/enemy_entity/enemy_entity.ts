@@ -1,10 +1,14 @@
+import { getNodeDef } from 'common/block/get_node_def';
 import { IsNode } from 'common/block/is_node';
+import { BlockTag } from 'common/block/tag';
+import { ActionResult } from 'server/ai/action_result';
 import { Path } from 'server/ai/pathfinder/path';
 import { Pathfinder } from 'server/ai/pathfinder/pathfinder';
 import { Entity, EntityProperties, EntityScript } from 'server/entity/entity';
 import { Faction } from 'server/entity/faction';
 import { Locomotion } from 'server/entity/locomotion/locomotion';
 import { DecayPoofParticle } from 'server/particles/decay_poof/decay_poof';
+import { Logger } from 'utils/logger';
 import { inRange } from 'utils/math';
 import { IntervalTimer } from 'utils/timer';
 
@@ -49,7 +53,11 @@ export abstract class EnemyEntityScript<
   }
 
   hunt(): boolean {
-    if (this.canAttackEntities() && !this.huntTarget && this.targetTimerPassed) {
+    if (
+      this.canAttackEntities() &&
+      !this.huntTarget &&
+      this.targetTimerPassed
+    ) {
       this.targetTimer.reset();
       this.huntTarget = this.context.entityStore.find({
         nearest: this.objRef.get_pos(),
@@ -94,7 +102,11 @@ export abstract class EnemyEntityScript<
         this.huntPath.restart(this.getVoxelPosition());
       }
     } else if (this.huntPath.hasNext()) {
-      this.locomotion.followPath(this, this.huntPath);
+      const pathResult = this.locomotion.followPath(this, this.huntPath);
+      if (pathResult === ActionResult.Stopped && this.repathTimerPassed) {
+        this.repathTimer.reset();
+        this.huntPath.restart(this.getVoxelPosition());
+      }
     } else {
       this.targetLocation = this.huntLocation;
     }
@@ -103,12 +115,16 @@ export abstract class EnemyEntityScript<
   }
 
   siege(): boolean {
+    // update siegePos
     if (this.siegePos) {
+      // check if siege target is still valid
       const blockDef = this.context.blockManager.getDef(this.siegePos);
       if (
         !blockDef ||
         !blockDef.properties.hasHealth() ||
-        !IsNode.real(minetest.get_node(this.siegePos))
+        !IsNode.real(minetest.get_node(this.siegePos)) ||
+        this.locomotion.moveCost(this.getVoxelPosition(), this.siegePos) ===
+          Infinity
       ) {
         this.siegePos = undefined;
       }
@@ -118,16 +134,14 @@ export abstract class EnemyEntityScript<
         this.getVoxelPosition(),
         this.targetLocation,
         this.properties.attackRange
-      )
+      ) &&
+      IsNode.breakableBuilding(minetest.get_node(this.targetLocation))
     ) {
-      const cost = this.locomotion.moveCost(this.targetLocation);
-      if (Locomotion.solidNodeCost(cost) && Locomotion.passableNodeCost(cost)) {
-        // Target location is solid, but passable (breakable)
-        this.siegePos = this.targetLocation;
-      }
+      this.siegePos = this.targetLocation;
     }
 
     if (this.siegePos) {
+      // get close and attack
       if (
         inRange(
           this.getVoxelPosition(),

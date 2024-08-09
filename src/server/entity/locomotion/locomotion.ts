@@ -46,7 +46,7 @@ export const Locomotion = {
       return isPassableDoor(node) ? 1 : Infinity;
     },
     [PassableNodes.BreakBuildings]: (node: Node) => {
-      if (isBreakableBuilding(node)) return randomInt(5, 30);
+      if (IsNode.breakableBuilding(node)) return randomInt(20, 40);
       return IsNode.solid(node) ? Infinity : 0;
     },
   },
@@ -58,13 +58,4 @@ function isPassableDoor(node: Node) {
   const def = getNodeDef(node.name);
   if (!def) return false;
   return BlockTag.get(def, BlockTag.PassableDoor) === BlockTag.PassableDoorTrue;
-}
-
-function isBreakableBuilding(node: Node) {
-  const def = getNodeDef(node.name);
-  if (!def) return false;
-  return (
-    BlockTag.get(def, BlockTag.BreakableBuilding) ===
-    BlockTag.BreakableBuildingTrue
-  );
 }

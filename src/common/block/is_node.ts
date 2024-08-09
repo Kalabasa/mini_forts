@@ -8,6 +8,7 @@ export const IsNode = {
   operable: isOperable,
   diggable: isDiggable,
   solid: isSolid,
+  breakableBuilding: isBreakableBuilding,
   shootableThrough: isShootableThrough,
   ignoreish: isIgnoreish,
   air: isAir,
@@ -52,13 +53,23 @@ function isSolid(node: NodeName | undefined): boolean {
   return nodeDef != undefined && nodeDef.walkable;
 }
 
+function isBreakableBuilding(node: NodeName | undefined): boolean {
+  if (node == undefined) return false;
+  const nodeDef = getNodeDef(node.name);
+  return (
+    nodeDef != undefined &&
+    BlockTag.get(nodeDef, BlockTag.BreakableBuilding) ===
+      BlockTag.BreakableBuildingTrue
+  );
+}
+
 function isShootableThrough(node: NodeName | undefined): boolean {
   if (node == undefined) return false;
   const nodeDef = getNodeDef(node.name);
   return (
     nodeDef != undefined &&
     (!nodeDef.walkable ||
-      BlockTag.get(nodeDef.groups, BlockTag.ShootableThrough) ===
+      BlockTag.get(nodeDef, BlockTag.ShootableThrough) ===
         BlockTag.ShootableThroughTrue)
   );
 }
