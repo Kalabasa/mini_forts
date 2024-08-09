@@ -220,6 +220,7 @@ export class MinionScript extends EntityScript<MinionProperties> {
   }
 
   private isBuildObstructed(pos: Vector3D) {
+    return false;
     return this.context.entityStore.has({
       volume: {
         min: vector.subtract(pos, 0.5),

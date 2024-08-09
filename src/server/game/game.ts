@@ -1,3 +1,4 @@
+import { getNodeDef } from 'common/block/get_node_def';
 import { ColonyAI } from 'server/ai/colony/colony_ai';
 import {
   BlockDefinition,
@@ -244,6 +245,64 @@ export class Game implements GameContext {
     const ref = this.blockManager.createRef(definition, pos);
     ref.initializeNode();
     ref.coreActivate();
+
+    if (ref.getNodeDef().walkable === true) {
+      // push entities out
+      const entities = this.entityStore.find({
+        volume: {
+          min: vector.subtract(pos, 0.75),
+          max: vector.add(pos, 0.75),
+        },
+      });
+
+      for (const entity of entities) {
+        const box = entity.getBoundingBox();
+        if (
+          box.min.x < pos.x + 0.5 &&
+          box.min.y < pos.y + 0.5 &&
+          box.min.z < pos.z + 0.5 &&
+          box.max.x > pos.x - 0.5 &&
+          box.max.y > pos.y - 0.5 &&
+          box.max.z > pos.z - 0.5
+        ) {
+          // determine preferred direction to push entity out
+          const dir = vector.direction(pos, entity.objRef.get_pos());
+          const absDirX = Math.abs(dir.x);
+          const absDirY = Math.abs(dir.y);
+          const absDirZ = Math.abs(dir.z);
+          if (absDirX > absDirY && absDirX > absDirZ) {
+            dir.x = dir.x / absDirX;
+            dir.y = 0;
+            dir.z = 0;
+          } else if (absDirY > absDirZ) {
+            dir.x = 0;
+            dir.y = dir.y / absDirY;
+            dir.z = 0;
+          } else {
+            dir.x = 0;
+            dir.y = 0;
+            dir.z = dir.z / absDirZ;
+          }
+
+          const candidatePushPos = [
+            vector.add(pos, dir),
+            vector.offset(pos, 0, 1, 0),
+            vector.offset(pos, -1, 0, 0),
+            vector.offset(pos, 1, 0, 0),
+            vector.offset(pos, 0, 0, -1),
+            vector.offset(pos, 0, 0, 1),
+            vector.offset(pos, 0, -1, 0),
+          ];
+          for (const pushPos of candidatePushPos) {
+            const pushPosNode = minetest.get_node(pushPos);
+            if (getNodeDef(pushPosNode.name)?.walkable !== true) {
+              entity.objRef.set_pos(pushPos);
+              break;
+            }
+          }
+        }
+      }
+    }
 
     return ref as BlockRefInstance<D>;
   }

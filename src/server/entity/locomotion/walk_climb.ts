@@ -5,7 +5,6 @@ import { Path } from 'server/ai/pathfinder/path';
 import { Animation } from 'server/entity/animation';
 import { Entity } from 'server/entity/entity';
 import { Locomotion, PassableNodes } from 'server/entity/locomotion/locomotion';
-import { Logger } from 'utils/logger';
 import { equalVectors, ZERO_V } from 'utils/math';
 import { predicate } from 'utils/tstl';
 

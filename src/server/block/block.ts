@@ -1,3 +1,4 @@
+import { getNodeDef } from 'common/block/get_node_def';
 import { BlockTag } from 'common/block/tag';
 import { Meta, NodeMeta } from 'common/meta';
 import { BlockGfx } from 'server/block/effects';
@@ -322,6 +323,11 @@ export class BlockScript<P extends BlockProperties = BlockProperties>
     throwError('Invalid block state!');
   }
 
+  getNodeDef(): NodeDefinition {
+    this.checkValid();
+    return getNodeDef(minetest.get_node(this.position).name)!;
+  }
+
   changeState(state: BlockState<P>): void {
     this.checkValid();
 
@@ -441,7 +447,9 @@ export class BlockScript<P extends BlockProperties = BlockProperties>
     return this.properties.hasTimer();
   }
 
-  isOperable(fromPosition?: Vector3D): this is BlockRef<BlockProperties.WithTag<'Operable', 'True'>> {
+  isOperable(
+    fromPosition?: Vector3D
+  ): this is BlockRef<BlockProperties.WithTag<'Operable', 'True'>> {
     return this.properties.isOperable();
   }
 

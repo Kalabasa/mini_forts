@@ -1,9 +1,11 @@
+import { FertileSoilDef } from 'server/block/fertile_soil/def';
 import { BeetleProperties } from 'server/entity/beetle/properties';
 import { EnemyEntityScript } from 'server/entity/enemy_entity/enemy_entity';
 import { Entity } from 'server/entity/entity';
 
 export class BeetleScript extends EnemyEntityScript<BeetleProperties> {
-  carrying = false;
+  private carrying = true;
+  private targetPlacement: Vector3D | null = null;
 
   override update(dt: number): void {
     if (this.collisionInfo.touching_ground) {
@@ -26,5 +28,12 @@ export class BeetleScript extends EnemyEntityScript<BeetleProperties> {
     if (blockRef) {
       blockRef.damage(2, this);
     }
+  }
+
+  private unload() {
+    if (!this.carrying) return;
+    const pos = this.getVoxelPosition();
+    this.context.setBlock(FertileSoilDef, pos);
+    this.carrying = false;
   }
 }

@@ -12,7 +12,6 @@ import { ReadonlyGameContext } from 'server/game/context';
 import { Logger } from 'utils/logger';
 import { equalVectors } from 'utils/math';
 import { IntervalTimer } from 'utils/timer';
-import { Paths } from 'server/ai/pathfinder/path_helper';
 
 export class MinionAgent {
   readonly pathfinder: Pathfinder;
