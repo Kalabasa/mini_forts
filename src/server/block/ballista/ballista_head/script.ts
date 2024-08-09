@@ -179,25 +179,22 @@ export class BallistaHeadScript extends BlockEntityScript<BallistaHeadProperties
     const dir = vector.direction(origin, target);
 
     // fire arrow from tip
-    const tip = vector.offset(origin, dir.x * 0.75, 0, dir.z * 0.75);
+    const tip = vector.offset(origin, dir.x * 0.85, 0, dir.z * 0.85);
 
-    const raycast = Raycast(tip, target, false, false);
-
-    for (const pointed of raycast) {
+    for (const pointed of Raycast(tip, target, false, false)) {
       if (!equalVectors(origin, pointed.under)) {
         const nodeUnder = minetest.get_node(pointed.under);
-        if (IsNode.solid(nodeUnder)) {
+        if (!IsNode.shootableThrough(nodeUnder)) {
           const nodeAbove = minetest.get_node(pointed.above);
-
           if (!IsNode.shootableThrough(nodeAbove)) return false;
 
-          // can phase through 0.25 thick walls
+          // can phase through thin walls
+          const threshold = 0.35;
           const forward = {
-            x: Math.round(pointed.intersection_point.x + dir.x * 0.25),
-            y: Math.round(pointed.intersection_point.y + dir.y * 0.25),
-            z: Math.round(pointed.intersection_point.z + dir.z * 0.25),
+            x: Math.round(pointed.intersection_point.x + dir.x * threshold),
+            y: Math.round(pointed.intersection_point.y + dir.y * threshold),
+            z: Math.round(pointed.intersection_point.z + dir.z * threshold),
           };
-
           if (equalVectors(forward, pointed.under)) return false;
         }
       }
