@@ -296,6 +296,7 @@ export class ForestStage extends Stage {
           column.x,
           column.z
         );
+        const woodFloor = (minY + 6) * 2 - woodHeight;
 
         columnSlice.forEach((pos) => {
           const y = pos.y;
@@ -316,8 +317,14 @@ export class ForestStage extends Stage {
             }
           } else if (y === woodHeight + 1 && y === terrainHeight + 1) {
             nodeID = SoilDef.registry.states.grassy.id;
-          } else if (y <= woodHeight && y >= (minY + 6) * 2 - woodHeight) {
+          } else if (y <= woodHeight && y >= woodFloor) {
             nodeID = WoodDef.registry.states.default.id;
+          } else if (
+            y <= terrainHeight &&
+            y === woodFloor - 1 &&
+            Math.random() < 0.2
+          ) {
+            nodeID = FertileSoilDef.registry.states.default.id;
           } else if (y === terrainHeight) {
             if (y === fertileSoilHeight) {
               nodeID = FertileSoilDef.registry.states.grassy.id;
