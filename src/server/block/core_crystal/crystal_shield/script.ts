@@ -7,7 +7,7 @@ import { CountdownTimer } from 'utils/timer';
 
 const maxShieldEnergy = 100;
 const shieldRegen = 1;
-const shieldRespawnTime = 60;
+const shieldRespawnTime = 90;
 
 export class CrystalShieldScript extends BlockEntityScript<CrystalShieldProperties> {
   get rechargeTimerCount(): number {
