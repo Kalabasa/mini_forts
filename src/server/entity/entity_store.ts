@@ -1,5 +1,6 @@
 import { Entity } from 'server/entity/entity';
 import { Faction } from 'server/entity/faction';
+import { CONFIG } from 'utils/config';
 import { throwError } from 'utils/error';
 import { Logger } from 'utils/logger';
 import { sqDist } from 'utils/math';
@@ -210,22 +211,33 @@ export class EntityStore {
 
     const mutableEntities = this.mutateEntities();
 
-    // deactivated entities don't have positions anymore
-    for (let i = 0; i < this.entities.length; i++) {
-      const entity = this.entities[i];
-      if (!entity.objRef.get_pos()) {
-        mutableEntities[i] = undefined;
-      } else {
-        for (const removal of this.removals) {
-          if (entity === removal) {
-            mutableEntities[i] = undefined;
-            break;
+    if (this.removals.size > 0) {
+      for (let i = 0; i < this.entities.length; i++) {
+        const entity = this.entities[i];
+        if (!isActive(entity)) {
+          mutableEntities[i] = undefined;
+        } else {
+          for (const removal of this.removals) {
+            if (entity === removal) {
+              mutableEntities[i] = undefined;
+              break;
+            }
           }
         }
       }
+      this.removals.clear();
     }
 
-    this.removals.clear();
+    if (this.additions.size > 0) {
+      let emptyIndex = 0;
+      for (const addition of this.additions) {
+        if (isActive(addition)) {
+          while (mutableEntities[emptyIndex] != undefined) emptyIndex++;
+          mutableEntities[emptyIndex] = addition;
+        }
+      }
+      this.additions.clear();
+    }
 
     // Pass through the list for
     // * sorting by x (insertion sort)
@@ -237,8 +249,8 @@ export class EntityStore {
         if (cur) {
           const curX = cur.objRef.get_pos().x;
 
+          // invariant: all items to the left of j are sorted and defined
           let j = sortedLen - 1;
-          // all items to the left of j are sorted and defined
           while (j >= 0 && curX < mutableEntities[j]!.objRef.get_pos().x) {
             mutableEntities[j + 1] = mutableEntities[j];
             j--;
@@ -265,44 +277,19 @@ export class EntityStore {
       throwError(error);
     }
 
-    for (const addition of this.additions) {
-      if (!addition.objRef.get_pos()) {
-        this.additions.delete(addition);
-      }
-    }
-
-    // insert new items
-    if (this.additions.size > 0) {
-      for (let i = this.entities.length - 1; i >= -this.additions.size; i--) {
-        let insert: Entity | undefined;
-
-        const cur = this.entities[i];
-        if (i >= 0) {
-          const curX = cur.objRef.get_pos().x;
-          for (const addition of this.additions) {
-            if (curX < addition.objRef.get_pos().x) {
-              insert = addition;
-              break;
-            }
-          }
-        } else {
-          // i < 0
-          insert = this.additions.values().next().value;
-        }
-
-        if (insert) {
-          mutableEntities[++i] = insert;
-          this.additions.delete(insert);
-
-          if (this.additions.size === 0) break;
-          i++; // reevaluate the newly added item
-        } else {
-          mutableEntities[i + this.additions.size] = cur;
-        }
-      }
-    }
-
     this.dirty = false;
+
+    // sanity
+    if (CONFIG.isDev) {
+      let lastX = -Infinity;
+      for (const entities of this.entities) {
+        const x = entities.objRef.get_pos().x;
+        if (lastX > x) {
+          throwError('Invariant violation');
+        }
+        lastX = x;
+      }
+    }
   }
 
   // returns index of the entity having the minimum x position that's greater than or equal to the specified x position
@@ -344,4 +331,9 @@ function passesFilter(entity: Entity, filters: EntityFilters): boolean {
       entity.health < Infinity === filters.damageable) &&
     (filters.filter == undefined || filters.filter(entity))
   );
+}
+
+function isActive(entity: Entity): boolean {
+  // deactivated entities don't have positions anymore
+  return entity.objRef.get_pos() != null;
 }
