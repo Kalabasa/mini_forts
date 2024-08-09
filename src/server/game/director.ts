@@ -177,8 +177,8 @@ export class Director {
   > {
     const proportions = [
       [SlugDef, 100],
-      [SnailDef, 8 + 4 * Math.sin(this.gameTime * 0.002)],
-      [BeetleDef, 1 + Math.sin(this.gameTime * 0.007)],
+      [SnailDef, 20 + 10 * Math.sin(this.gameTime * 0.002)],
+      [BeetleDef, 10 + 5 * Math.sin(this.gameTime * 0.007)],
     ] as const;
 
     const total = proportions.reduce((sum, [, prop]) => sum + prop, 0);

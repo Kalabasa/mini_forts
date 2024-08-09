@@ -5,7 +5,7 @@ export class IntervalTimer {
 
   reset(seconds?: number): void {
     this.count = 0;
-    if (seconds) this.seconds = seconds;
+    if (seconds != null) this.seconds = seconds;
   }
 
   updateAndCheck(dt: number): boolean {
@@ -25,7 +25,7 @@ export class CountdownTimer {
 
   reset(seconds?: number): void {
     this.count = 0;
-    if (seconds) this.seconds = seconds;
+    if (seconds != null) this.seconds = seconds;
   }
 
   updateAndCheck(dt: number): boolean {

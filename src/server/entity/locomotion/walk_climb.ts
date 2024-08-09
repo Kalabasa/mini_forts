@@ -84,18 +84,18 @@ function create({
       const lower = fromOrTo.y < position.y ? fromOrTo : position;
       const higher = fromOrTo.y < position.y ? position : fromOrTo;
 
+      // check top has space for climbing on
+      const top = minetest.get_node(higher);
+      if (solidNodeCost(nodeCost(top))) return Infinity;
+
       for (let y = lower.y; y < higher.y; y++) {
-        // check passable space for climbing
+        // check space for climbing
         const climbPath = minetest.get_node({
           x: lower.x,
           y: y + 1,
           z: lower.z,
         });
         if (solidNodeCost(nodeCost(climbPath))) return Infinity;
-
-        // check steady surface for climbing on
-        const surface = minetest.get_node({ x: higher.x, y, z: higher.z });
-        if (passableNodeCost(nodeCost(surface))) return Infinity;
       }
     }
 
@@ -146,8 +146,8 @@ function create({
       Math.round(box.max.z) === next.z;
 
     const reachedVertically =
-      Math.round(box.min.y + 1e-2) === next.y &&
-      Math.round(box.max.y) === next.y;
+      Math.round(box.min.y + 1e-3) >= next.y &&
+      Math.round(box.max.y) <= next.y + 1;
 
     if (reachedHorizontally && reachedVertically) {
       if (path.hasNext()) {
@@ -181,7 +181,7 @@ function create({
     const delta = targetLocation && vector.subtract(targetLocation, entityPos);
     const deltaH = delta && { x: delta.x, y: 0, z: delta.z };
 
-    if (!delta || !deltaH || vector.length(deltaH) < walkSpeed * dt * 0.5) {
+    if (!delta || !deltaH || vector.length(deltaH) < walkSpeed * dt * 0.6) {
       if (entity.collisionInfo.touching_ground) {
         if (
           entity.animation === animationMap.walk ||

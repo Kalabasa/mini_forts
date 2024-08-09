@@ -36,7 +36,7 @@ export class SnailScript extends EnemyEntityScript<SnailProperties> {
     entity.damage(2, this);
   }
 
-  protected override attackNode(position: Vector3D) {
+  protected override attackBlock(position: Vector3D) {
     this.animation = this.animations.attack;
     this.restartAnimation();
 

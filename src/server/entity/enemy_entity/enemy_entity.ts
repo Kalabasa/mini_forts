@@ -49,7 +49,7 @@ export abstract class EnemyEntityScript<
   }
 
   hunt(): boolean {
-    if (!this.huntTarget && this.targetTimerPassed) {
+    if (this.canAttackEntities() && !this.huntTarget && this.targetTimerPassed) {
       this.targetTimer.reset();
       this.huntTarget = this.context.entityStore.find({
         nearest: this.objRef.get_pos(),
@@ -138,7 +138,7 @@ export abstract class EnemyEntityScript<
         this.targetLocation = undefined;
         if (this.attackTimerPassed) {
           this.attackTimer.reset();
-          this.attackNode(this.siegePos);
+          this.attackBlock(this.siegePos);
         }
         return true;
       } else {
@@ -149,13 +149,17 @@ export abstract class EnemyEntityScript<
     return false;
   }
 
+  protected canAttackEntities(): boolean {
+    return true;
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   protected attackEntity(entity: Entity): void {
     // For override
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  protected attackNode(position: Vector3D): void {
+  protected attackBlock(position: Vector3D): void {
     // For override
   }
 

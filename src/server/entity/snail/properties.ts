@@ -12,7 +12,7 @@ export class SnailProperties extends EnemyEntityProperties {
 
   override health = 10;
 
-  attackRange = 1;
+  attackRange = 1.2;
   attackInterval = 1.5;
 
   animations = Animation.createMap({
