@@ -189,7 +189,7 @@ export class BallistaHeadScript extends BlockEntityScript<BallistaHeadProperties
           if (!IsNode.shootableThrough(nodeAbove)) return false;
 
           // can phase through thin walls
-          const threshold = 0.35;
+          const threshold = 0.15;
           const forward = {
             x: Math.round(pointed.intersection_point.x + dir.x * threshold),
             y: Math.round(pointed.intersection_point.y + dir.y * threshold),
@@ -224,7 +224,7 @@ function addShotParticles(origin: Vector3D, target: Vector3D) {
   );
 
   let d = 0.6;
-  const p = vector.add(origin, vector.multiply(dir, d));
+  const p = vector.offset(origin, dir.x * d, dir.y * 0.2, dir.z * d);
   while (d + 1 < distance) {
     const t = d / distance;
 
