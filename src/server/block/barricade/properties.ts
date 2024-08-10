@@ -37,7 +37,7 @@ export class BarricadeProperties extends DamagedProperties {
 
   override resource: Resource = {
     type: ResourceType.Wood,
-    amount: 5,
+    amount: 10,
   };
 
   override tags = this.defineTags({
