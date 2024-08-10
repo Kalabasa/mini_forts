@@ -20,22 +20,14 @@ export function createIDGenerator(
         97 + (floorDiv(time, 26 ** 2) % 26), // 2
         97 + (floorDiv(time, 26) % 26), // 3
         97 + (time % 26), // 4
-        pcgRandom.next(97, 122), // 5
-        pcgRandom.next(97, 122), // 6
-        pcgRandom.next(97, 122), // 7
-        pcgRandom.next(97, 122), // 8
-        pcgRandom.next(97, 122), // 9
-        pcgRandom.next(97, 122), // 10
-        pcgRandom.next(97, 122), // 11
-        pcgRandom.next(97, 122), // 12
-        pcgRandom.next(97, 122), // 13
-        pcgRandom.next(97, 122), // 14
-        pcgRandom.next(97, 122), // 15
-        pcgRandom.next(97, 122), // 16
-        pcgRandom.next(97, 122), // 17
-        pcgRandom.next(97, 122), // 18
-        pcgRandom.next(97, 122), // 19
-        pcgRandom.next(97, 122), // 20
+        pcgRandom.next(65, 90) + pcgRandom.next(0, 1) * 32, // 5
+        pcgRandom.next(65, 90) + pcgRandom.next(0, 1) * 32, // 6
+        pcgRandom.next(65, 90) + pcgRandom.next(0, 1) * 32, // 7
+        pcgRandom.next(65, 90) + pcgRandom.next(0, 1) * 32, // 8
+        pcgRandom.next(65, 90) + pcgRandom.next(0, 1) * 32, // 9
+        pcgRandom.next(65, 90) + pcgRandom.next(0, 1) * 32, // 10
+        pcgRandom.next(65, 90) + pcgRandom.next(0, 1) * 32, // 11
+        pcgRandom.next(65, 90) + pcgRandom.next(0, 1) * 32, // 12
       ]
     );
     return (no + randomBytes) as ID;

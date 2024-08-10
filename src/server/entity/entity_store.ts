@@ -227,6 +227,17 @@ export class EntityStore {
         }
       }
       this.removals.clear();
+
+      // sanity check
+      if (CONFIG.isDev) {
+        for (const entity of this.entities) {
+          if (!isActive(entity)) {
+            throwError(
+              'Invariant violation: inactive entity in list after removals'
+            );
+          }
+        }
+      }
     }
 
     if (this.additions.size > 0) {
@@ -238,6 +249,17 @@ export class EntityStore {
         }
       }
       this.additions.clear();
+
+      // sanity check
+      if (CONFIG.isDev) {
+        for (const entity of this.entities) {
+          if (!isActive(entity)) {
+            throwError(
+              'Invariant violation: inactive entity in list after additions'
+            );
+          }
+        }
+      }
     }
 
     // Pass through the list for
@@ -265,7 +287,7 @@ export class EntityStore {
       mutableEntities.length = sortedLen;
     } catch (error) {
       Logger.error(
-        'entities',
+        'entities dump',
         mutableEntities.map(
           (e) =>
             e && {
@@ -280,13 +302,13 @@ export class EntityStore {
 
     this.dirty = false;
 
-    // sanity
+    // sanity check
     if (CONFIG.isDev) {
       let lastX = -Infinity;
-      for (const entities of this.entities) {
-        const x = entities.objRef.get_pos().x;
+      for (const entity of this.entities) {
+        const x = entity.objRef.get_pos().x;
         if (lastX > x) {
-          throwError('Invariant violation');
+          throwError('Invariant violation: entities list is unsorted');
         }
         lastX = x;
       }
