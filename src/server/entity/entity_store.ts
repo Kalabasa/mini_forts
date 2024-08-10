@@ -33,6 +33,10 @@ type QueryResult<T extends EntityQuery> = T extends NearestQuery
   ? Entity | undefined
   : IterableIterator<Entity>;
 
+// used instead of null because when array elements are nil in Lua, things get weird
+const EMPTY_MARKER = 'empty' as const;
+type EmptyMarker = typeof EMPTY_MARKER;
+
 // todo: unit tests
 // Storage and query of entities
 // Note: BlockEntities not included!
@@ -44,17 +48,19 @@ export class EntityStore {
 
   private dirty = false;
 
-  // when updating the array, temporarily setting undefined is allowed
-  private mutateEntities(): (Entity | undefined)[] {
-    return this.entities as (Entity | undefined)[];
+  // when updating the array, EmptyMarker is used to mark empty items
+  private mutateEntities(): (Entity | EmptyMarker)[] {
+    return this.entities as (Entity | EmptyMarker)[];
   }
 
   add(entity: Entity): void {
+    Logger.trace('ES: Add', entity);
     this.dirty = true;
     this.additions.add(entity);
   }
 
   remove(entity: Entity): void {
+    Logger.trace('ES: Remove', entity);
     this.dirty = true;
     this.removals.add(entity);
     this.additions.delete(entity);
@@ -212,106 +218,122 @@ export class EntityStore {
 
     const mutableEntities = this.mutateEntities();
 
-    if (this.removals.size > 0) {
-      for (let i = 0; i < this.entities.length; i++) {
-        const entity = this.entities[i];
-        if (!isActive(entity)) {
-          mutableEntities[i] = undefined;
-        } else {
-          for (const removal of this.removals) {
-            if (entity === removal) {
-              mutableEntities[i] = undefined;
-              break;
+    try {
+      if (this.removals.size > 0) {
+        for (let i = 0; i < mutableEntities.length; i++) {
+          const entity = mutableEntities[i];
+          if (entity !== EMPTY_MARKER) {
+            if (!isActive(entity)) {
+              mutableEntities[i] = EMPTY_MARKER;
+            } else {
+              for (const removal of this.removals) {
+                if (entity === removal) {
+                  mutableEntities[i] = EMPTY_MARKER;
+                  break;
+                }
+              }
+            }
+          }
+        }
+
+        // Sanity check
+        if (CONFIG.isDev) {
+          for (const entity of mutableEntities) {
+            if (entity !== EMPTY_MARKER && !isActive(entity)) {
+              throwError('Inactive entity remained in list after removals');
             }
           }
         }
       }
-      this.removals.clear();
 
-      // sanity check
-      if (CONFIG.isDev) {
-        for (const entity of this.entities) {
-          if (!isActive(entity)) {
-            throwError(
-              'Invariant violation: inactive entity in list after removals'
-            );
+      let emptyIndex = 0;
+
+      if (this.additions.size > 0) {
+        for (const addition of this.additions) {
+          if (isActive(addition)) {
+            while (mutableEntities[emptyIndex]) emptyIndex++;
+            mutableEntities[emptyIndex] = addition;
+          }
+        }
+
+        // Sanity check
+        if (CONFIG.isDev) {
+          for (const entity of mutableEntities) {
+            if (entity !== EMPTY_MARKER && !isActive(entity)) {
+              throwError(
+                'Unexpected inactive entity found in list after additions'
+              );
+            }
           }
         }
       }
-    }
 
-    if (this.additions.size > 0) {
-      let emptyIndex = 0;
-      for (const addition of this.additions) {
-        if (isActive(addition)) {
-          while (mutableEntities[emptyIndex] != undefined) emptyIndex++;
-          mutableEntities[emptyIndex] = addition;
+      // Fill in holes
+      if (this.removals.size > 0) {
+        let filledLen = 0;
+        for (let i = 0; i < mutableEntities.length; i++) {
+          const cur = mutableEntities[i];
+          if (cur !== EMPTY_MARKER) mutableEntities[filledLen++] = cur;
+        }
+        mutableEntities.length = filledLen;
+
+        // Sanity check: No holes
+        if (CONFIG.isDev) {
+          for (const entity of mutableEntities) {
+            if (entity === EMPTY_MARKER) throwError('Unexpected empty element');
+          }
         }
       }
+
+      this.removals.clear();
       this.additions.clear();
 
-      // sanity check
-      if (CONFIG.isDev) {
-        for (const entity of this.entities) {
-          if (!isActive(entity)) {
-            throwError(
-              'Invariant violation: inactive entity in list after additions'
-            );
-          }
-        }
-      }
-    }
-
-    // Pass through the list for
-    // * sorting by x (insertion sort)
-    // * collapsing removed items
-    try {
-      let sortedLen = 0;
+      // Keep list sorted
       for (let i = 0; i < mutableEntities.length; i++) {
         const cur = mutableEntities[i];
-        if (cur) {
-          const curX = cur.objRef.get_pos().x;
+        if (cur === EMPTY_MARKER) throwError('Unexpected empty element');
 
-          // invariant: all items to the left of j are sorted and defined
-          let j = sortedLen - 1;
-          while (j >= 0 && curX < mutableEntities[j]!.objRef.get_pos().x) {
-            mutableEntities[j + 1] = mutableEntities[j];
-            j--;
+        const curX = cur.objRef.get_pos().x;
+
+        // insertion sort
+        let j = i - 1;
+        while (
+          j >= 0 &&
+          curX < (mutableEntities[j] as Entity).objRef.get_pos().x
+        ) {
+          mutableEntities[j + 1] = mutableEntities[j];
+          j--;
+        }
+        mutableEntities[j + 1] = cur;
+      }
+
+      // Sanity check: Sorted
+      if (CONFIG.isDev) {
+        let lastX = -Infinity;
+        for (const entity of this.entities) {
+          const x = entity.objRef.get_pos().x;
+          if (lastX > x) {
+            throwError('Invariant violation: entities list is unsorted');
           }
-          mutableEntities[j + 1] = cur;
-
-          sortedLen++;
+          lastX = x;
         }
       }
 
-      mutableEntities.length = sortedLen;
+      this.dirty = false;
     } catch (error) {
       Logger.error(
         'entities dump',
-        mutableEntities.map(
-          (e) =>
-            e && {
-              id: e.id,
-              alive: e.alive,
-              pos: e.objRef.get_pos(),
-            }
+        mutableEntities.map((e) =>
+          e === EMPTY_MARKER
+            ? e
+            : {
+                id: e.id,
+                alive: e.alive,
+                pos: e.objRef.get_pos(),
+              }
         )
       );
       throwError(error);
-    }
-
-    this.dirty = false;
-
-    // sanity check
-    if (CONFIG.isDev) {
-      let lastX = -Infinity;
-      for (const entity of this.entities) {
-        const x = entity.objRef.get_pos().x;
-        if (lastX > x) {
-          throwError('Invariant violation: entities list is unsorted');
-        }
-        lastX = x;
-      }
     }
   }
 
