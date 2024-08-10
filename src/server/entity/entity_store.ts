@@ -33,6 +33,7 @@ type QueryResult<T extends EntityQuery> = T extends NearestQuery
   ? Entity | undefined
   : IterableIterator<Entity>;
 
+// todo: unit tests
 // Storage and query of entities
 // Note: BlockEntities not included!
 export class EntityStore {
@@ -110,7 +111,7 @@ export class EntityStore {
 
     const index = this.findIndex(center.x);
 
-    let nearestDist2 = Infinity;
+    let nearestDist = Infinity;
     let nearestEntity: Entity | undefined;
 
     let left = index - 1;
@@ -121,14 +122,14 @@ export class EntityStore {
         if (entity && entity.active && passesFilter(entity, filters)) {
           const entityPos = entity.objRef.get_pos();
           if (entityPos) {
-            if (entityPos.x < center.x - nearestDist2) {
+            if (entityPos.x < center.x - nearestDist) {
               left = -1;
-            } else if (entityPos.x > center.x + nearestDist2) {
+            } else if (entityPos.x > center.x + nearestDist) {
               right = length;
             } else {
-              const dist2 = sqDist(center, entityPos);
-              if (dist2 < nearestDist2) {
-                nearestDist2 = dist2;
+              const dist = vector.distance(center, entityPos);
+              if (dist < nearestDist) {
+                nearestDist = dist;
                 nearestEntity = entity;
               }
             }
@@ -140,7 +141,7 @@ export class EntityStore {
       right++;
     }
 
-    if (maxDistance != undefined && nearestDist2 > maxDistance) {
+    if (maxDistance != undefined && nearestDist > maxDistance) {
       return undefined;
     }
 
@@ -188,8 +189,8 @@ export class EntityStore {
     const { sphereCenter, sphereRadius, ...filters } = query;
 
     const volume = {
-      min: vector.subtract(vector.new(sphereCenter), sphereRadius),
-      max: vector.add(vector.new(sphereCenter), sphereRadius),
+      min: vector.subtract(sphereCenter, sphereRadius),
+      max: vector.add(sphereCenter, sphereRadius),
     };
 
     const radius2 = sphereRadius * sphereRadius;

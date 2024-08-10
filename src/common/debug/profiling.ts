@@ -5,7 +5,7 @@ const enableProfiling = true;
 
 const timerStatReportCooldownUs = 30 * 1_000_000;
 const reportingThresholdMs = 10;
-const alertSpikeThresholdPercent = 0.15;
+const alertSpikeThresholdPercent = 0.25;
 
 export const Profiling =
   enableProfiling && CONFIG.isDev
