@@ -232,15 +232,6 @@ export class MinionScript extends EntityScript<MinionProperties> {
     dt: number,
     action: ActionWithType<MinionAction.Operate>
   ) {
-    if (
-      !WorkerCapabilities.inOperateRange(
-        action.operatePos,
-        this.objRef.get_pos()
-      )
-    ) {
-      return this.endAction();
-    }
-
     // stand in place
     this.targetLocation = this.getVoxelPosition();
     if (
@@ -251,7 +242,16 @@ export class MinionScript extends EntityScript<MinionProperties> {
     }
 
     const blockRef = this.context.blockManager.getRef(action.operatePos);
-    if (!blockRef || !blockRef.isOperable(this.objRef.get_pos())) {
+    if (!blockRef || !blockRef.isOperable()) {
+      return this.endAction();
+    }
+
+    const pos = this.getVoxelPosition();
+    if (
+      blockRef
+        .getOperatorPositions()
+        .every((opPos) => !equalVectors(opPos, pos))
+    ) {
       return this.endAction();
     }
 
@@ -333,16 +333,22 @@ export class MinionScript extends EntityScript<MinionProperties> {
 
   startOperating(position: Vector3D): void {
     if (!this.collisionInfo.touching_ground) return;
-    if (!WorkerCapabilities.inOperateRange(position, this.objRef.get_pos()))
-      return;
 
     if (
       this._action.type !== MinionAction.Operate ||
       !equalVectors(this._action.operatePos, position)
     ) {
-      const node = minetest.get_node(position);
+      const blockRef = this.context.blockManager.getRef(position);
+      if (!blockRef || !blockRef.isOperable()) return;
 
-      if (!IsNode.operable(node)) return;
+      const pos = this.getVoxelPosition();
+      if (
+        blockRef
+          .getOperatorPositions()
+          .every((opPos) => !equalVectors(opPos, pos))
+      ) {
+        return;
+      }
 
       this._action = {
         type: MinionAction.Operate,

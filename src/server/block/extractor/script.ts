@@ -1,4 +1,6 @@
 import { IsNode } from 'common/block/is_node';
+import { TaskPriority } from 'server/ai/colony/task';
+import { WorkerCapabilities } from 'server/ai/colony/worker_capabilities';
 import {
   BlockCallbacks,
   BlockDefinition,
@@ -55,6 +57,18 @@ export class ExtractorScript
     } else {
       this.setRipe(true);
     }
+  }
+
+  shouldOperate(): TaskPriority | undefined {
+    if (this.resourceType == null) return undefined;
+    if (!this.isRipe()) return undefined;
+    return this.context
+      .getDirector()
+      .calculateResourceHarvestingPriority(this.resourceType);
+  }
+
+  getOperatorPositions(): Vector3D[] {
+    return WorkerCapabilities.getOperatePositions(this.position);
   }
 
   startOperation() {

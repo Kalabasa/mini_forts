@@ -6,6 +6,8 @@ import { BlockPhysics } from 'common/block/physics';
 import { WorkerCapabilities } from 'server/ai/colony/worker_capabilities';
 import { MinionAgent } from 'server/ai/colony/minion_agent';
 import { MoveTask } from 'server/ai/colony/tasks/move_task';
+import { ReadonlyGameContext } from 'server/game/context';
+import { TaskManager } from '../task_manager';
 
 export class BuildTask extends MoveTask {
   constructor(
@@ -13,6 +15,11 @@ export class BuildTask extends MoveTask {
     readonly block: BlockDefinition.WithGhost
   ) {
     super(WorkerCapabilities.getWorkPositions(position));
+  }
+
+  override setContext(taskManager: TaskManager, context: ReadonlyGameContext): void {
+    super.setContext(taskManager, context);
+    this.moveDestinationBias = context.getHomePosition();
   }
 
   override isStrictlyImpossible(): boolean {

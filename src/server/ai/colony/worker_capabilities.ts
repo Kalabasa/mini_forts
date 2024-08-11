@@ -14,7 +14,6 @@ const locomotion = WalkClimbLocomotion.create({
 export const WorkerCapabilities = {
   locomotion,
   inWorkRange,
-  inOperateRange, // todo: Deprecated; Use operable.getOperatorPositions()
   getWorkPositions,
   getOperatePositions,
 };

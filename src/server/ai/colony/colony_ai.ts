@@ -1,6 +1,6 @@
 import { IsNode } from 'common/block/is_node';
 import { DebugTaskManager } from 'server/ai/colony/debug_task_manager';
-import { Operable } from 'server/ai/colony/operable';
+import { OperableBlockRef } from 'server/ai/colony/operable';
 import { TaskPriority } from 'server/ai/colony/task';
 import { BuildTask } from 'server/ai/colony/tasks/build_task';
 import { DigTask } from 'server/ai/colony/tasks/dig_task';
@@ -8,7 +8,9 @@ import { HealAtDenTask } from 'server/ai/colony/tasks/heal_at_den_task';
 import { LeaveBuildSiteTask } from 'server/ai/colony/tasks/leave_build_site_task';
 import { OperateTask } from 'server/ai/colony/tasks/operate_task';
 import { TaskManager } from 'server/ai/colony/task_manager';
-import { BlockDefinition } from 'server/block/block';
+import {
+  BlockDefinition,
+} from 'server/block/block';
 import { EnemyEntity } from 'server/entity/enemy_entity/enemy_entity';
 import {
   ReadonlyGameContext,
@@ -22,7 +24,7 @@ import { equalVectors } from 'utils/math';
 import { IntervalTimer } from 'utils/timer';
 import { MinionAgent } from 'server/ai/colony/minion_agent';
 
-const logger = createLogger("ColonyAI");
+const logger = createLogger('ColonyAI');
 
 export class ColonyAI {
   private readonly contextDelegate = new ReadonlyGameContextDelegate();
@@ -36,7 +38,7 @@ export class ColonyAI {
   private readonly dens = new Map<string, Vector3D>();
   private readonly healAtDenTasks = new Map<string, HealAtDenTask>();
 
-  private readonly operables = new Map<string, Operable>();
+  private readonly operables = new Map<string, OperableBlockRef>();
   private readonly operateTasks = new Map<string, OperateTask>();
 
   private readonly buildTasks = new Map<string, BuildTask>();
@@ -170,7 +172,7 @@ export class ColonyAI {
     }
   }
 
-  private enlistOperable(operable: Operable, priority: TaskPriority) {
+  private enlistOperable(operable: OperableBlockRef, priority: TaskPriority) {
     const key = posKey(operable.position);
 
     if (this.operateTasks.has(key)) return;
@@ -180,7 +182,7 @@ export class ColonyAI {
     this.taskManager.addTask(task, priority);
   }
 
-  private delistOperable(operable: Operable) {
+  private delistOperable(operable: OperableBlockRef) {
     logger.trace('Disengaging operable...', operable);
     this.removeOperateTask(posKey(operable.position));
   }
@@ -263,7 +265,7 @@ export class ColonyAI {
     }
   }
 
-  addOperable(operable: Operable): void {
+  addOperable(operable: OperableBlockRef): void {
     this.operables.set(posKey(operable.position), operable);
   }
 

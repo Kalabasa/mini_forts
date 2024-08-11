@@ -12,7 +12,7 @@ const pathToDestination = Symbol();
 export class MoveTask extends Task {
   constructor(
     public destinations: Vector3D[],
-    readonly priorityCenter: Vector3D | undefined = undefined
+    protected moveDestinationBias: Vector3D | undefined = undefined
   ) {
     super();
   }
@@ -61,13 +61,14 @@ export class MoveTask extends Task {
     const agentPos = agent.getVoxelPosition();
 
     const path = Tasks.remember(this, pathToDestination, () => {
-      return this.priorityCenter
+      const priorityCenter = this.moveDestinationBias;
+      return priorityCenter
         ? agent.pathfinder.findPriorityPath(
             agentPos,
             this.destinations.map((pos) => ({
               pos,
               // todo: normalize so nearest dest is 0
-              extraCost: 1 / (1 + vector.distance(agentPos, pos)),
+              extraCost: 1 / (1 + vector.distance(priorityCenter, pos)),
             }))
           )
         : agent.pathfinder.findAnyPath(agentPos, this.destinations);

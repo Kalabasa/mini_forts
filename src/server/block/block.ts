@@ -1,6 +1,7 @@
 import { getNodeDef } from 'common/block/get_node_def';
 import { BlockTag } from 'common/block/tag';
 import { Meta, NodeMeta } from 'common/meta';
+import { TaskPriority } from 'server/ai/colony/task';
 import { BlockGfx } from 'server/block/effects';
 import { GhostDefinition } from 'server/block/ghost';
 import { Entity } from 'server/entity/entity';
@@ -244,7 +245,12 @@ export type BlockCallbacks<Properties> = {} & Callback<
   Callback<
     Properties,
     BlockProperties.WithTag<'Operable', 'True'>,
-    { startOperation(): void; endOperation(): void }
+    {
+      startOperation(): void;
+      endOperation(): void;
+      shouldOperate(): TaskPriority | undefined;
+      getOperatorPositions(): Vector3D[];
+    }
   >;
 
 type Callback<
@@ -447,9 +453,7 @@ export class BlockScript<P extends BlockProperties = BlockProperties>
     return this.properties.hasTimer();
   }
 
-  isOperable(
-    fromPosition?: Vector3D
-  ): this is BlockRef<BlockProperties.WithTag<'Operable', 'True'>> {
+  isOperable(): this is BlockRef<BlockProperties.WithTag<'Operable', 'True'>> {
     return this.properties.isOperable();
   }
 

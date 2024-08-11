@@ -1,4 +1,5 @@
 import { IsNode } from 'common/block/is_node';
+import { TaskPriority } from 'server/ai/colony/task';
 import { Pathfinder } from 'server/ai/pathfinder/pathfinder';
 import { CoreCrystalDef } from 'server/block/core_crystal/def';
 import { CoreCrystalBaseDef } from 'server/block/core_crystal_base/def';
@@ -21,6 +22,7 @@ import { SnailDef } from 'server/entity/snail/def';
 import { LoadMapChunkEvent } from 'server/game/events';
 import { Game } from 'server/game/game';
 import { ResourceType } from 'server/game/resources';
+import { unreachableCase } from 'utils/error';
 import { ID } from 'utils/id';
 import { createLogger } from 'utils/logger';
 import { hypot2, randomInt } from 'utils/math';
@@ -102,13 +104,47 @@ export class Director {
         faction: Faction.Defenders,
       });
       this.maxEnemies = Math.round(
-        Math.max(initialMaxEnemies, 0.2 * defenderCount * Math.log2(this.gameTime))
+        Math.max(
+          initialMaxEnemies,
+          0.2 * defenderCount * Math.log2(this.gameTime)
+        )
       );
 
       this.cleanupEnemyEntities();
       if (!this.enemiesDisabled) {
         this.trySpawnEnemy();
       }
+    }
+  }
+
+  calculateResourceHarvestingPriority(type: ResourceType): TaskPriority {
+    const [idealMin, idealMax] = this.calculateResourceAmountsIdealRange(type);
+    const actualAmount = this.game.getResource(type);
+    const value = (actualAmount - idealMin) / (idealMax - idealMin);
+    if (value < 0) {
+      // is below minimum
+      return TaskPriority.High;
+    } else if (value < 0.2) {
+      return TaskPriority.Medium;
+    } else {
+      return TaskPriority.Low;
+    }
+  }
+
+  private calculateResourceAmountsIdealRange(
+    type: ResourceType
+  ): [number, number] {
+    const e = this.enemies.size;
+    if (type === ResourceType.Wood) {
+      return [10 + e * 2, 20 + e * 2];
+    } else if (type === ResourceType.Stone) {
+      return [15 + e * 2, 30 + e * 2];
+    } else if (type === ResourceType.Metal) {
+      return [10 + e * 5, 20 + e * 10];
+    } else if (type === ResourceType.Spore) {
+      return [40, 100];
+    } else {
+      unreachableCase(type);
     }
   }
 

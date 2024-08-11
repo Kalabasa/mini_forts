@@ -1,13 +1,13 @@
 import { ActionResult } from 'server/ai/action_result';
 import { MinionAgent } from 'server/ai/colony/minion_agent';
-import { Operable } from 'server/ai/colony/operable';
 import { MoveTask } from 'server/ai/colony/tasks/move_task';
 import { Logger } from 'utils/logger';
+import { OperableBlockRef } from '../operable';
 
 export class OperateTask extends MoveTask {
   readonly position: Vector3D;
 
-  constructor(readonly operable: Operable) {
+  constructor(readonly operable: OperableBlockRef) {
     super(operable.getOperatorPositions());
     this.position = operable.position;
   } 
@@ -28,7 +28,7 @@ export class OperateTask extends MoveTask {
   [Logger.Props]() {
     return {
       pos: this.position,
-      operable: this.operable.blockRef,
+      operable: this.operable,
     };
   }
 }

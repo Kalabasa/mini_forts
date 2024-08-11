@@ -1,7 +1,6 @@
 import { Meta } from 'common/meta';
 import { MinionAgent } from 'server/ai/colony/minion_agent';
 import { ColonyAI } from 'server/ai/colony/colony_ai';
-import { BallistaOperable } from 'server/ai/colony/operables/ballista_operable';
 import { BallistaDef } from 'server/block/ballista/def';
 import { BallistaScript } from 'server/block/ballista/script';
 import { BlockDefinition } from 'server/block/block';
@@ -26,7 +25,6 @@ import { Game } from 'server/game/game';
 import { createLogger, Logger } from 'utils/logger';
 import { ExtractorDef } from 'server/block/extractor/def';
 import { ExtractorScript } from 'server/block/extractor/script';
-import { ExtractorOperable } from 'server/ai/colony/operables/extractor_operable';
 
 export function registerColonyAI(
   game: Game,
@@ -72,11 +70,11 @@ export function registerColonyAI(
     if (blockDef === BallistaDef) {
       logger.info('Adding BallistaOperable:', position);
       const blockRef = blockManager.getRef<BallistaScript>(position);
-      colonyAI.addOperable(new BallistaOperable(blockRef, position, game));
+      colonyAI.addOperable(blockRef);
     } else if (blockDef === ExtractorDef) {
       logger.info('Adding ExtractorOperable:', position);
       const blockRef = blockManager.getRef<ExtractorScript>(position);
-      colonyAI.addOperable(new ExtractorOperable(blockRef, position, game));
+      colonyAI.addOperable(blockRef);
     } else if (blockDef === DenDef) {
       logger.info('Adding Den:', position);
       colonyAI.addDen(position);

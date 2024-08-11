@@ -1,6 +1,5 @@
 import { IsNode } from 'common/block/is_node';
 import { ActionResult } from 'server/ai/action_result';
-import { Operable } from 'server/ai/colony/operable';
 import { Task } from 'server/ai/colony/task';
 import { TaskManager } from 'server/ai/colony/task_manager';
 import { Path } from 'server/ai/pathfinder/path';
@@ -12,6 +11,7 @@ import { ReadonlyGameContext } from 'server/game/context';
 import { Logger } from 'utils/logger';
 import { equalVectors } from 'utils/math';
 import { IntervalTimer } from 'utils/timer';
+import { OperableBlockRef } from './operable';
 
 export class MinionAgent {
   readonly pathfinder: Pathfinder;
@@ -108,7 +108,7 @@ export class MinionAgent {
     }
   }
 
-  operateOperable(target: Operable): ActionResult {
+  operateOperable(target: OperableBlockRef): ActionResult {
     if (
       this.minion.action.type === MinionAction.Operate &&
       equalVectors(this.minion.action.operatePos, target.position)

@@ -18,6 +18,7 @@ export enum ShotStage {
 
 export class BallistaHeadScript extends BlockEntityScript<BallistaHeadProperties> {
   operational = false;
+  private target: Entity | undefined;
   private shotStage: ShotStage = ShotStage.Idle;
   private shotTimer: CountdownTimer | undefined;
 
@@ -31,66 +32,66 @@ export class BallistaHeadScript extends BlockEntityScript<BallistaHeadProperties
   }
 
   override update(dt: number) {
-    const pos = this.getVoxelPosition();
-
-    let target: Entity | undefined;
+    if (
+      this.target &&
+      (!this.target.alive ||
+        !this.target.active ||
+        !this.canTarget(this.target))
+    ) {
+      this.target = undefined;
+    }
 
     if (
       this.operational &&
       this.context.hasResource(this.properties.ammunition)
     ) {
-      target = this.getTarget();
-
-      if (target) {
-        const delta = vector.subtract(target.objRef.get_pos(), pos);
+      if (!this.target) {
+        this.target = this.findTarget();
+      }
+      
+      if (this.target?.alive) {
+        const pos = this.getVoxelPosition();
+        const delta = vector.subtract(this.target.objRef.get_pos(), pos);
         const yaw = Math.atan2(delta.z, delta.x) + Math.PI / 4;
         this.objRef.set_rotation({
           x: Math.PI / 2,
           y: yaw,
           z: 0,
         });
-      }
-    }
 
-    if (target) {
-      if (this.shotStage === ShotStage.Idle) {
-        let cooledDown = true;
-        if (this.shotTimer) {
-          cooledDown = this.shotTimer.updateAndCheck(dt);
-        }
-
-        if (cooledDown) {
-          this.shotStage = ShotStage.Charge;
-          this.shotTimer = new CountdownTimer(this.properties.chargeTime);
-          this.animation = this.animations.charge;
-        }
-      } else if (this.shotStage === ShotStage.Charge) {
-        if (this.shotTimer!.updateAndCheck(dt)) {
-          this.shotStage = ShotStage.Hold;
-          this.shotTimer = new CountdownTimer(this.properties.holdTime);
-          this.animation = this.animations.hold;
-        }
-      } else if (this.shotStage === ShotStage.Hold) {
-        if (this.shotTimer!.updateAndCheck(dt)) {
-          this.context.subtractResource(this.properties.ammunition, pos);
-
-          addShotParticles(pos, target.objRef.get_pos());
-          const damage = target.damage(this.properties.shotDamage, pos);
-          if (damage > 0) {
-            BallistaBolt.create(target, pos);
+        if (this.shotStage === ShotStage.Idle) {
+          let cooledDown = true;
+          if (this.shotTimer) {
+            cooledDown = this.shotTimer.updateAndCheck(dt);
           }
 
-          this.shotStage = ShotStage.Release;
-          this.shotTimer = new CountdownTimer(this.properties.releaseTime);
-          this.animation = this.animations.release;
+          if (cooledDown) {
+            this.shotStage = ShotStage.Charge;
+            this.shotTimer = new CountdownTimer(this.properties.chargeTime);
+            this.animation = this.animations.charge;
+          }
+        } else if (this.shotStage === ShotStage.Charge) {
+          if (this.shotTimer!.updateAndCheck(dt)) {
+            this.shotStage = ShotStage.Hold;
+            this.shotTimer = new CountdownTimer(this.properties.holdTime);
+            this.animation = this.animations.hold;
+          }
+        } else if (this.shotStage === ShotStage.Hold) {
+          if (this.shotTimer!.updateAndCheck(dt)) {
+            this.context.subtractResource(this.properties.ammunition, pos);
+
+            addShotParticles(pos, this.target.objRef.get_pos());
+            const damage = this.target.damage(this.properties.shotDamage, pos);
+            if (damage > 0) {
+              BallistaBolt.create(this.target, pos);
+            }
+
+            this.shotStage = ShotStage.Release;
+            this.shotTimer = new CountdownTimer(this.properties.releaseTime);
+            this.animation = this.animations.release;
+          }
         }
       }
-    } else if (
-      this.shotStage !== ShotStage.Idle &&
-      this.shotStage !== ShotStage.Release
-    ) {
-      this.shotStage = ShotStage.Idle;
-      this.animation = this.animations.idle;
     }
 
     if (this.shotStage === ShotStage.Release) {
@@ -99,11 +100,14 @@ export class BallistaHeadScript extends BlockEntityScript<BallistaHeadProperties
         this.shotTimer = new CountdownTimer(this.properties.cooldownTime);
         this.animation = this.animations.idle;
       }
+    } else if (!this.target && this.shotStage !== ShotStage.Idle) {
+      this.shotStage = ShotStage.Idle;
+      this.animation = this.animations.idle;
     }
   }
 
   getOperatorPositions() {
-    const target = this.getTarget();
+    const target = this.target ?? this.findTarget();
     if (!target) return [];
 
     const targetPos = target.objRef.get_pos();
@@ -120,7 +124,7 @@ export class BallistaHeadScript extends BlockEntityScript<BallistaHeadProperties
     return dot < 0.71;
   }
 
-  getTarget() {
+  findTarget() {
     const home = this.context.getHomePosition();
     const pos = this.getVoxelPosition();
 
@@ -133,7 +137,7 @@ export class BallistaHeadScript extends BlockEntityScript<BallistaHeadProperties
 
     for (const targetCandidate of nearbyTargetCandidates) {
       const targetPos = targetCandidate.objRef.get_pos();
-      const score = sqDist(pos, targetPos) + sqDist(home, targetPos) * 2;
+      const score = sqDist(pos, targetPos) + sqDist(home, targetPos) * 4;
       if (score < targetScore) {
         targetScore = score;
         target = targetCandidate;
@@ -150,14 +154,14 @@ export class BallistaHeadScript extends BlockEntityScript<BallistaHeadProperties
       faction: Faction.Attackers,
       alive: true,
       damageable: true,
-      filter: (entity) => this.canTarget(entity, false, true),
+      filter: (entity) => this.canTarget(entity),
     };
   }
 
   canTarget(
     entity: Entity,
     checkDistance: boolean = true,
-    checkOperableAngle: boolean = true
+    checkOperableAngles: boolean = true
   ): boolean {
     const origin = this.getVoxelPosition();
     const target = entity.objRef.get_pos();
@@ -168,7 +172,7 @@ export class BallistaHeadScript extends BlockEntityScript<BallistaHeadProperties
     }
 
     if (
-      checkOperableAngle &&
+      checkOperableAngles &&
       WorkerCapabilities.getOperatePositions(origin).every(
         (operatorPos) => !this.canOperatorTarget(target, operatorPos)
       )
