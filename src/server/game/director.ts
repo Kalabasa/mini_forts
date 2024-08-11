@@ -136,13 +136,13 @@ export class Director {
   ): [number, number] {
     const e = this.enemies.size;
     if (type === ResourceType.Wood) {
-      return [10 + e * 2, 20 + e * 2];
+      return [0, 20 + e * 2];
     } else if (type === ResourceType.Stone) {
-      return [15 + e * 2, 30 + e * 2];
+      return [0, 30 + e * 3];
     } else if (type === ResourceType.Metal) {
-      return [10 + e * 5, 20 + e * 10];
+      return [10, 20 + e * 10];
     } else if (type === ResourceType.Spore) {
-      return [40, 100];
+      return [0, 160];
     } else {
       unreachableCase(type);
     }

@@ -68,7 +68,7 @@ export class MoveTask extends Task {
             this.destinations.map((pos) => ({
               pos,
               // todo: normalize so nearest dest is 0
-              extraCost: 1 / (1 + vector.distance(priorityCenter, pos)),
+              extraCost: 10 / (10 + vector.distance(priorityCenter, pos)),
             }))
           )
         : agent.pathfinder.findAnyPath(agentPos, this.destinations);
