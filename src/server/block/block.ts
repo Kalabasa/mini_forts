@@ -249,7 +249,7 @@ export type BlockCallbacks<Properties> = {} & Callback<
       startOperation(): void;
       endOperation(): void;
       shouldOperate(): TaskPriority | undefined;
-      getOperatorPositions(): Vector3D[];
+      getOperatePositions(): Vector3D[];
     }
   >;
 

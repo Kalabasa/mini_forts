@@ -249,7 +249,7 @@ export class MinionScript extends EntityScript<MinionProperties> {
     const pos = this.getVoxelPosition();
     if (
       blockRef
-        .getOperatorPositions()
+        .getOperatePositions()
         .every((opPos) => !equalVectors(opPos, pos))
     ) {
       return this.endAction();
@@ -344,7 +344,7 @@ export class MinionScript extends EntityScript<MinionProperties> {
       const pos = this.getVoxelPosition();
       if (
         blockRef
-          .getOperatorPositions()
+          .getOperatePositions()
           .every((opPos) => !equalVectors(opPos, pos))
       ) {
         return;

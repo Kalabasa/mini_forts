@@ -7,7 +7,7 @@ import { Entity } from 'server/entity/entity';
 import { Faction } from 'server/entity/faction';
 import { DustParticle } from 'server/particles/dust/dust';
 import { equalVectors, sqDist } from 'utils/math';
-import { CountdownTimer } from 'utils/timer';
+import { CountdownTimer, IntervalTimer } from 'utils/timer';
 
 export enum ShotStage {
   Idle,
@@ -16,10 +16,17 @@ export enum ShotStage {
   Release,
 }
 
+type Targeting = {
+  target: Entity;
+  withinRange: boolean;
+  operatePositions: Vector3D[];
+};
+
 export class BallistaHeadScript extends BlockEntityScript<BallistaHeadProperties> {
   operational = false;
-  private target: Entity | undefined;
-  private shotStage: ShotStage = ShotStage.Idle;
+  private targeting: Targeting | undefined;
+  private targetingTimer = new IntervalTimer(0.5);
+  private shotStage = ShotStage.Idle;
   private shotTimer: CountdownTimer | undefined;
 
   override activate() {
@@ -32,26 +39,18 @@ export class BallistaHeadScript extends BlockEntityScript<BallistaHeadProperties
   }
 
   override update(dt: number) {
-    if (
-      this.target &&
-      (!this.target.alive ||
-        !this.target.active ||
-        !this.canTarget(this.target))
-    ) {
-      this.target = undefined;
+    if (this.targetingTimer.updateAndCheck(dt)) {
+      this.updateTargeting();
     }
 
     if (
       this.operational &&
       this.context.hasResource(this.properties.ammunition)
     ) {
-      if (!this.target) {
-        this.target = this.findTarget();
-      }
-      
-      if (this.target?.alive) {
+      if (this.targeting?.target.alive) {
+        const target = this.targeting.target;
         const pos = this.getVoxelPosition();
-        const delta = vector.subtract(this.target.objRef.get_pos(), pos);
+        const delta = vector.subtract(target.objRef.get_pos(), pos);
         const yaw = Math.atan2(delta.z, delta.x) + Math.PI / 4;
         this.objRef.set_rotation({
           x: Math.PI / 2,
@@ -80,10 +79,10 @@ export class BallistaHeadScript extends BlockEntityScript<BallistaHeadProperties
           if (this.shotTimer!.updateAndCheck(dt)) {
             this.context.subtractResource(this.properties.ammunition, pos);
 
-            addShotParticles(pos, this.target.objRef.get_pos());
-            const damage = this.target.damage(this.properties.shotDamage, pos);
+            addShotParticles(pos, target.objRef.get_pos());
+            const damage = target.damage(this.properties.shotDamage, pos);
             if (damage > 0) {
-              BallistaBolt.create(this.target, pos);
+              BallistaBolt.create(target, pos);
             }
 
             this.shotStage = ShotStage.Release;
@@ -100,23 +99,71 @@ export class BallistaHeadScript extends BlockEntityScript<BallistaHeadProperties
         this.shotTimer = new CountdownTimer(this.properties.cooldownTime);
         this.animation = this.animations.idle;
       }
-    } else if (!this.target && this.shotStage !== ShotStage.Idle) {
+    } else if (!this.targeting && this.shotStage !== ShotStage.Idle) {
       this.shotStage = ShotStage.Idle;
       this.animation = this.animations.idle;
     }
   }
 
-  getOperatorPositions() {
-    const target = this.target ?? this.findTarget();
-    if (!target) return [];
-
-    const targetPos = target.objRef.get_pos();
-    return WorkerCapabilities.getOperatePositions(
-      this.getVoxelPosition()
-    ).filter((operatePos) => this.canOperatorTarget(targetPos, operatePos));
+  getTargetingState(): Targeting | undefined {
+    return this.targeting;
   }
 
-  private canOperatorTarget(targetPos: Vector3D, operatePos: Vector3D) {
+  private updateTargeting() {
+    const preAimBuffer = 2;
+
+    if (this.targeting) {
+      const target = this.targeting.target;
+      if (!target.alive || !target.active) {
+        this.targeting = undefined;
+      }
+
+      if (
+        this.targeting &&
+        sqDist(this.getVoxelPosition(), target.objRef.get_pos()) >
+          (this.properties.shotRange + preAimBuffer) ** 2
+      ) {
+        this.targeting = undefined;
+      }
+
+      if (this.targeting) {
+        Object.assign(this.targeting, this.computeTargeting(target));
+
+        if (this.targeting.operatePositions.length === 0) {
+          this.targeting = undefined;
+        }
+      }
+    }
+
+    if (!this.targeting) {
+      const target = this.findTarget(preAimBuffer);
+      if (!target) return null;
+
+      this.targeting = {
+        target,
+        ...this.computeTargeting(target),
+      };
+    }
+  }
+
+  private computeTargeting(target: Entity): Omit<Targeting, 'target'> {
+    const targetPos = target.objRef.get_pos();
+    const pos = this.getVoxelPosition();
+    const withinRange =
+      sqDist(pos, targetPos) <= this.properties.shotRange ** 2;
+    const operatePositions = WorkerCapabilities.getOperatePositions(pos).filter(
+      (operatePos) => this.checkValidOperatePosition(targetPos, operatePos)
+    );
+    return { withinRange, operatePositions };
+  }
+
+  private checkValidOperatePosition(targetPos: Vector3D, operatePos: Vector3D) {
+    if (!this.checkValidAngle(targetPos, operatePos)) return false;
+    const node = minetest.get_node(operatePos);
+    return !IsNode.solid(node);
+  }
+
+  private checkValidAngle(targetPos: Vector3D, operatePos: Vector3D) {
     const pos = this.getVoxelPosition();
     const dirToTarget = vector.direction(pos, targetPos);
     const dirToOperator = vector.direction(pos, operatePos);
@@ -124,20 +171,32 @@ export class BallistaHeadScript extends BlockEntityScript<BallistaHeadProperties
     return dot < 0.71;
   }
 
-  findTarget() {
+  private findTarget(addRange: number = 0) {
+    const shotRange = this.properties.shotRange;
     const home = this.context.getHomePosition();
     const pos = this.getVoxelPosition();
 
     let targetScore = Infinity;
     let target: Entity | undefined;
 
-    const nearbyTargetCandidates = this.context.entityStore.find(
-      this.getTargetQuery()
-    );
+    const nearbyTargetCandidates = this.context.entityStore.find({
+      sphereCenter: this.getVoxelPosition(),
+      sphereRadius: shotRange + addRange,
+      faction: Faction.Attackers,
+      alive: true,
+      damageable: true,
+      filter: (entity) => this.canShoot(entity, { checkDistance: false }),
+    });
 
     for (const targetCandidate of nearbyTargetCandidates) {
       const targetPos = targetCandidate.objRef.get_pos();
-      const score = sqDist(pos, targetPos) + sqDist(home, targetPos) * 4;
+      const targetDist2 = sqDist(pos, targetPos);
+      const score =
+        targetDist2 +
+        // prioritize targets near home
+        sqDist(home, targetPos) * 4 +
+        // prioritize targets within shot range
+        (targetDist2 > shotRange ? 1e6 : 0);
       if (score < targetScore) {
         targetScore = score;
         target = targetCandidate;
@@ -147,45 +206,22 @@ export class BallistaHeadScript extends BlockEntityScript<BallistaHeadProperties
     return target;
   }
 
-  getTargetQuery() {
-    return {
-      sphereCenter: this.getVoxelPosition(),
-      sphereRadius: this.properties.shotRange,
-      faction: Faction.Attackers,
-      alive: true,
-      damageable: true,
-      filter: (entity) => this.canTarget(entity),
-    };
-  }
-
-  canTarget(
-    entity: Entity,
-    checkDistance: boolean = true,
-    checkOperableAngles: boolean = true
+  private canShoot(
+    target: Entity,
+    { checkDistance = true }: { checkDistance?: boolean } = {}
   ): boolean {
     const origin = this.getVoxelPosition();
-    const target = entity.objRef.get_pos();
+    const targetPos = target.objRef.get_pos();
 
-    if (checkDistance) {
-      const dist2 = sqDist(origin, target);
-      if (dist2 > this.properties.shotRange ** 2) return false;
-    }
+    // check if targeting is valid
+    const targeting = this.computeTargeting(target);
+    if (checkDistance && !targeting.withinRange) return false;
+    if (targeting.operatePositions.length == 0) return false;
 
-    if (
-      checkOperableAngles &&
-      WorkerCapabilities.getOperatePositions(origin).every(
-        (operatorPos) => !this.canOperatorTarget(target, operatorPos)
-      )
-    ) {
-      return false;
-    }
-
-    const dir = vector.direction(origin, target);
-
-    // fire arrow from tip
+    // check if arrow path is clear
+    const dir = vector.direction(origin, targetPos);
     const tip = vector.offset(origin, dir.x * 0.85, 0, dir.z * 0.85);
-
-    for (const pointed of Raycast(tip, target, false, false)) {
+    for (const pointed of Raycast(tip, targetPos, false, false)) {
       if (!equalVectors(origin, pointed.under)) {
         const nodeUnder = minetest.get_node(pointed.under);
         if (!IsNode.shootableThrough(nodeUnder)) {

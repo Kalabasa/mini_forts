@@ -12,16 +12,14 @@ export class BallistaScript
     if (!this.context.hasResource(BallistaHeadDef.properties.ammunition)) {
       return undefined;
     }
+    const targeting = this.entity.getTargetingState();
+    if (!targeting) return undefined;
 
-    const enemyInRange = this.context.entityStore.has(
-      this.entity.getTargetQuery()
-    );
-
-    return enemyInRange ? TaskPriority.High : undefined;
+    return targeting.withinRange ? TaskPriority.High : TaskPriority.Low;
   }
 
-  getOperatorPositions(): Vector3D[] {
-    return this.entity.getOperatorPositions();
+  getOperatePositions(): Vector3D[] {
+    return this.entity.getTargetingState()?.operatePositions ?? [];
   }
 
   startOperation(): void {

@@ -67,7 +67,7 @@ export class ExtractorScript
       .calculateResourceHarvestingPriority(this.resourceType);
   }
 
-  getOperatorPositions(): Vector3D[] {
+  getOperatePositions(): Vector3D[] {
     return WorkerCapabilities.getOperatePositions(this.position);
   }
 
