@@ -8,9 +8,7 @@ import { HealAtDenTask } from 'server/ai/colony/tasks/heal_at_den_task';
 import { LeaveBuildSiteTask } from 'server/ai/colony/tasks/leave_build_site_task';
 import { OperateTask } from 'server/ai/colony/tasks/operate_task';
 import { TaskManager } from 'server/ai/colony/task_manager';
-import {
-  BlockDefinition,
-} from 'server/block/block';
+import { BlockDefinition } from 'server/block/block';
 import { EnemyEntity } from 'server/entity/enemy_entity/enemy_entity';
 import {
   ReadonlyGameContext,
@@ -162,7 +160,13 @@ export class ColonyAI {
       const task = this.operateTasks.get(key);
       const isOperating = task != null && !task.ended;
 
-      if (isOperating !== (shouldOperatePriority != null)) {
+      if (
+        isOperating &&
+        shouldOperatePriority != null &&
+        task!.priority !== shouldOperatePriority
+      ) {
+        this.taskManager.updatePriority(task!, shouldOperatePriority);
+      } else if (isOperating !== (shouldOperatePriority != null)) {
         if (shouldOperatePriority != null) {
           this.enlistOperable(operable, shouldOperatePriority);
         } else {

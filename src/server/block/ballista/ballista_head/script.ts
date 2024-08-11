@@ -19,6 +19,7 @@ export enum ShotStage {
 type Targeting = {
   target: Entity;
   withinRange: boolean;
+  clearShot: boolean;
   operatePositions: Vector3D[];
 };
 
@@ -26,6 +27,7 @@ export class BallistaHeadScript extends BlockEntityScript<BallistaHeadProperties
   operational = false;
   private targeting: Targeting | undefined;
   private targetingTimer = new IntervalTimer(0.5);
+  private idleTargetingTimer = new IntervalTimer(1.0);
   private shotStage = ShotStage.Idle;
   private shotTimer: CountdownTimer | undefined;
 
@@ -39,7 +41,9 @@ export class BallistaHeadScript extends BlockEntityScript<BallistaHeadProperties
   }
 
   override update(dt: number) {
-    if (this.targetingTimer.updateAndCheck(dt)) {
+    const targetingTimerPassed = this.targetingTimer.updateAndCheck(dt);
+    const idleTargetingTimerPassed = this.idleTargetingTimer.updateAndCheck(dt);
+    if (this.operational ? targetingTimerPassed : idleTargetingTimerPassed) {
       this.updateTargeting();
     }
 
@@ -149,12 +153,43 @@ export class BallistaHeadScript extends BlockEntityScript<BallistaHeadProperties
   private computeTargeting(target: Entity): Omit<Targeting, 'target'> {
     const targetPos = target.objRef.get_pos();
     const pos = this.getVoxelPosition();
+
     const withinRange =
       sqDist(pos, targetPos) <= this.properties.shotRange ** 2;
+
     const operatePositions = WorkerCapabilities.getOperatePositions(pos).filter(
       (operatePos) => this.checkValidOperatePosition(targetPos, operatePos)
     );
-    return { withinRange, operatePositions };
+
+    let clearShot = true;
+    const dir = vector.direction(pos, targetPos);
+    const tip = vector.offset(pos, dir.x * 0.85, 0, dir.z * 0.85);
+    for (const pointed of Raycast(tip, targetPos, false, false)) {
+      if (!equalVectors(pos, pointed.under)) {
+        const nodeUnder = minetest.get_node(pointed.under);
+        if (!IsNode.shootableThrough(nodeUnder)) {
+          const nodeAbove = minetest.get_node(pointed.above);
+          if (!IsNode.shootableThrough(nodeAbove)) {
+            clearShot = false;
+            break;
+          }
+
+          // can phase through thin walls
+          const threshold = 0.15;
+          const forward = {
+            x: Math.round(pointed.intersection_point.x + dir.x * threshold),
+            y: Math.round(pointed.intersection_point.y + dir.y * threshold),
+            z: Math.round(pointed.intersection_point.z + dir.z * threshold),
+          };
+          if (equalVectors(forward, pointed.under)) {
+            clearShot = false;
+            break;
+          }
+        }
+      }
+    }
+
+    return { withinRange, clearShot, operatePositions };
   }
 
   private checkValidOperatePosition(targetPos: Vector3D, operatePos: Vector3D) {
@@ -208,39 +243,23 @@ export class BallistaHeadScript extends BlockEntityScript<BallistaHeadProperties
 
   private canShoot(
     target: Entity,
-    { checkDistance = true }: { checkDistance?: boolean } = {}
+    {
+      checkDistance = true,
+      checkOperatePositions = true,
+    }: { checkDistance?: boolean; checkOperatePositions?: boolean } = {}
   ): boolean {
     const origin = this.getVoxelPosition();
     const targetPos = target.objRef.get_pos();
 
-    // check if targeting is valid
     const targeting = this.computeTargeting(target);
-    if (checkDistance && !targeting.withinRange) return false;
-    if (targeting.operatePositions.length == 0) return false;
-
-    // check if arrow path is clear
-    const dir = vector.direction(origin, targetPos);
-    const tip = vector.offset(origin, dir.x * 0.85, 0, dir.z * 0.85);
-    for (const pointed of Raycast(tip, targetPos, false, false)) {
-      if (!equalVectors(origin, pointed.under)) {
-        const nodeUnder = minetest.get_node(pointed.under);
-        if (!IsNode.shootableThrough(nodeUnder)) {
-          const nodeAbove = minetest.get_node(pointed.above);
-          if (!IsNode.shootableThrough(nodeAbove)) return false;
-
-          // can phase through thin walls
-          const threshold = 0.15;
-          const forward = {
-            x: Math.round(pointed.intersection_point.x + dir.x * threshold),
-            y: Math.round(pointed.intersection_point.y + dir.y * threshold),
-            z: Math.round(pointed.intersection_point.z + dir.z * threshold),
-          };
-          if (equalVectors(forward, pointed.under)) return false;
-        }
+    if (checkDistance || checkOperatePositions) {
+      if (checkDistance && !targeting.withinRange) return false;
+      if (checkOperatePositions && targeting.operatePositions.length == 0) {
+        return false;
       }
     }
 
-    return true;
+    return targeting.clearShot;
   }
 }
 

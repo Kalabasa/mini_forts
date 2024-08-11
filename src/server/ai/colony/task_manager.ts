@@ -90,6 +90,35 @@ export class TaskManager {
     task.memory = {};
   }
 
+  updatePriority(task: ManagedTask, priority: TaskPriority): void {
+    this.logger.trace('updatePriority', task, priority);
+
+    const oldPriority = task.priority;
+    if (oldPriority === priority) return;
+
+    task.priority = priority;
+
+    // no immediate effect
+    if (task.agent || task.ended) return;
+
+    if (this.unassignedTasks[oldPriority].has(task)) {
+      this.unassignedTasks[oldPriority].delete(task);
+      this.unassignedTasks[task.priority].add(task);
+    } else if (this.backlogTasks[oldPriority].has(task)) {
+      this.backlogTasks[oldPriority].delete(task);
+      this.backlogTasks[task.priority].add(task);
+    } else {
+      const inAssignedTasks = this.assignedTasks[oldPriority].has(task);
+      throwError(
+        'Reprioritized task not in the expected task lists.',
+        inAssignedTasks
+          ? 'But is in assignedTasks.'
+          : 'Not even in assignedTasks.',
+        task
+      );
+    }
+  }
+
   unassignAgent(agent: ManagedAgent) {
     this.logger.trace('unassignAgent', agent);
     if (agent.task) {
