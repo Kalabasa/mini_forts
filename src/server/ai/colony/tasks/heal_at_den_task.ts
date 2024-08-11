@@ -8,6 +8,10 @@ export class HealAtDenTask extends MoveTask {
     super([position]);
   }
 
+  override get positionHint(): Vector3D {
+    return this.position;
+  }
+
   override execute(dt: number, agent: MinionAgent): ActionResult {
     const moveResult = super.execute(dt, agent);
     if (moveResult !== ActionResult.Done) return moveResult;

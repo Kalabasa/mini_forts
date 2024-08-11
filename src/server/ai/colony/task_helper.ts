@@ -3,9 +3,8 @@ import { Task } from "server/ai/colony/task";
 import { Path } from "server/ai/pathfinder/path";
 import { MinionAgent } from "server/ai/colony/minion_agent";
 
-type WithDestination = {
+type WithPosition = {
   readonly position: Vector3D;
-  readonly destinations: Vector3D[];
 };
 
 // This could be a mixin
@@ -20,7 +19,7 @@ export const Tasks = {
     return value;
   },
 
-  expectNode(task: Task & WithDestination, name: string): ActionResult {
+  expectNode(task: Task & WithPosition, name: string): ActionResult {
     const node = getNodeAtPosition(task);
     return node.name === name ? ActionResult.Done : ActionResult.Impossible;
   },
@@ -40,11 +39,6 @@ export const Tasks = {
 
     return moveResult;
   },
-
-  /** @deprecated inherit MoveTask */
-  getPath(task: Task & WithDestination, agent: MinionAgent): Path {
-    return getPath(task, agent);
-  },
 };
 
 const nodeAtPosition = Symbol();
@@ -55,17 +49,8 @@ type Memory = {
   [pathToDestination]: Path;
 };
 
-function getNodeAtPosition(task: Task & WithDestination) {
+function getNodeAtPosition(task: Task & WithPosition) {
   return compute(task, nodeAtPosition, () => minetest.get_node(task.position));
-}
-
-function getPath(task: Task & WithDestination, agent: MinionAgent) {
-  return compute(task, pathToDestination, () => {
-    return agent.pathfinder.findAnyPath(
-      agent.getVoxelPosition(),
-      task.destinations
-    );
-  });
 }
 
 function compute<T extends keyof Memory>(

@@ -22,6 +22,10 @@ export class BuildTask extends MoveTask {
     this.moveDestinationBias = context.getHomePosition();
   }
 
+  override get positionHint(): Vector3D {
+    return this.position;
+  }
+
   override isStrictlyImpossible(): boolean {
     if (!this.context.hasResource(this.block.properties.resource)) return true;
     if (!BlockPhysics.canSupport(this.block, this.position)) return true;

@@ -1,9 +1,10 @@
+import { MinionAgent } from 'server/ai/colony/minion_agent';
 import { Task, TaskPriority } from 'server/ai/colony/task';
 import { ReadonlyGameContext } from 'server/game/context';
 import { throwError } from 'utils/error';
 import { createLogger, Logger } from 'utils/logger';
+import { sqDist } from 'utils/math';
 import { IntervalTimer } from 'utils/timer';
-import { MinionAgent } from 'server/ai/colony/minion_agent';
 
 // In order of priority
 const priorities = [TaskPriority.High, TaskPriority.Medium, TaskPriority.Low];
@@ -30,6 +31,8 @@ export class TaskManager {
   protected readonly assignedTasks = new Set<ManagedTask>();
 
   private schedulingTimer = new IntervalTimer(0.8);
+  private backlogReorderingTimer = new IntervalTimer(30);
+  private backlogReorderingSet = TaskPriority.Low;
 
   private buffer: number[] = [];
   private bufferStride: number;
@@ -166,6 +169,12 @@ export class TaskManager {
       }
     }
 
+    if (this.backlogReorderingTimer.updateAndCheck(dt)) {
+      this.reorderBacklog(this.backlogReorderingSet);
+      this.backlogReorderingSet =
+        (this.backlogReorderingSet + 1) % (TaskPriority.High + 1);
+    }
+
     if (this.schedulingTimer.updateAndCheck(dt)) {
       this.assignTasks();
     }
@@ -202,6 +211,19 @@ export class TaskManager {
   private moveAgentToFree(agent: ManagedAgent) {
     this.busyAgents.delete(agent);
     this.freeAgents.add(agent);
+  }
+
+  private reorderBacklog(prioritySet: TaskPriority) {
+    this.logger.trace('reorderBacklog', prioritySet);
+    const home = this.context.getHomePosition();
+    const backlogTasks = this.backlogTasks[prioritySet];
+    const tasks = [...backlogTasks.values()].sort(
+      (a, b) => sqDist(home, a.positionHint) - sqDist(home, b.positionHint)
+    );
+    backlogTasks.clear();
+    for (const task of tasks) {
+      backlogTasks.add(task);
+    }
   }
 
   private assignTasks() {

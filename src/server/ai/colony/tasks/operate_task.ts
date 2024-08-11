@@ -15,6 +15,10 @@ export class OperateTask extends MoveTask {
     this.position = operable.position;
   }
 
+  override get positionHint(): Vector3D {
+    return this.position;
+  }
+
   override isStrictlyImpossible(): boolean {
     return (
       super.isStrictlyImpossible() || this.operable.shouldOperate() == null

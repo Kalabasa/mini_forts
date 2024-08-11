@@ -32,6 +32,10 @@ export abstract class Task {
     return this._ended;
   }
 
+  get positionHint(): Vector3D {
+    return this.context.getHomePosition();
+  }
+
   unassign(): void {
     if (this.agent) {
       this.taskManager?.unassignTask(this);

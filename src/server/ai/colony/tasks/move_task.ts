@@ -6,18 +6,30 @@ import { WorkerCapabilities } from 'server/ai/colony/worker_capabilities';
 import { Path } from 'server/ai/pathfinder/path';
 import { Paths } from 'server/ai/pathfinder/path_helper';
 import { Locomotion } from 'server/entity/locomotion/locomotion';
+import { throwError } from 'utils/error';
 
 const pathToDestination = Symbol();
 
 export class MoveTask extends Task {
   constructor(
-    public destinations: Vector3D[],
+    private destinations: Vector3D[],
     protected moveDestinationBias: Vector3D | undefined = undefined
   ) {
+    if (destinations.length === 0) {
+      throwError('Empty destinations array!');
+    }
     super();
   }
 
+  override get positionHint(): Vector3D {
+    return this.destinations[0];
+  }
+
   protected updateDestinations(destinations: Vector3D[]) {
+    if (destinations.length === 0) {
+      throwError('Empty destinations array!');
+    }
+
     if (destinationsKey(this.destinations) !== destinationsKey(destinations)) {
       this.destinations = destinations;
       delete this.memory[pathToDestination];
