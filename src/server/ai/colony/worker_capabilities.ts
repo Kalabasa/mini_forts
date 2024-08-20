@@ -67,38 +67,24 @@ function inWorkRange(
   if (dy > 1) return false;
   if (dx === 0 && dy === 0 && dz === 0) return false;
 
-  if (!ignoreBlocks && dy === 1) {
-    if (workerPos.y > target.y) {
-      if (
-        IsNode.solid(
-          minetest.get_node({
-            x: target.x,
-            y: workerPos.y,
-            z: target.z,
-          })
-        )
-      ) {
-        return false;
-      }
-    } else {
-      if (
-        IsNode.solid(
-          minetest.get_node({
-            x: target.x,
-            y: workerPos.y,
-            z: target.z,
-          })
-        ) &&
-        IsNode.solid(
-          minetest.get_node({
-            x: workerPos.x,
-            y: target.y,
-            z: workerPos.z,
-          })
-        )
-      ) {
-        return false;
-      }
+  if (!ignoreBlocks) {
+    if (IsNode.solid(minetest.get_node(workerPos))) return false;
+
+    // check for space between
+    if (dy === 1) {
+      const lower = workerPos.y < target.y ? workerPos : target;
+      const higher = workerPos.y < target.y ? target : workerPos;
+      const betweenLow = minetest.get_node({
+        x: higher.x,
+        y: lower.y,
+        z: higher.z,
+      });
+      const betweenHigh = minetest.get_node({
+        x: lower.x,
+        y: higher.y,
+        z: lower.z,
+      });
+      if (IsNode.solid(betweenLow) && IsNode.solid(betweenHigh)) return false;
     }
   }
 
