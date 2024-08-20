@@ -321,7 +321,8 @@ export class ForestStage extends Stage {
             nodeID = WoodDef.registry.states.default.id;
           } else if (
             y <= terrainHeight &&
-            y === woodFloor - 1 &&
+            y >= woodFloor - 1 &&
+            y < woodHeight &&
             Math.random() < 0.2
           ) {
             nodeID = FertileSoilDef.registry.states.default.id;
