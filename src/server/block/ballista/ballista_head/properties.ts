@@ -11,7 +11,7 @@ export class BallistaHeadProperties extends BlockEntityProperties {
   readonly releaseTime = 0.4;
   readonly cooldownTime = 0.2;
 
-  readonly shotRange = 10;
+  readonly shotRange = 6;
   readonly shotDamage = 1;
   readonly ammunition: Resource = {
     type: ResourceType.Metal,

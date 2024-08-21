@@ -3,6 +3,7 @@ import { WorkerCapabilities } from 'server/ai/colony/worker_capabilities';
 import { BallistaBolt } from 'server/block/ballista/ballista_head/ballista_bolt';
 import { BallistaHeadProperties } from 'server/block/ballista/ballista_head/properties';
 import { BlockEntityScript } from 'server/block/entity_block/block_entity';
+import { DebugMarker } from 'server/debug/debug_marker';
 import { Entity } from 'server/entity/entity';
 import { Faction } from 'server/entity/faction';
 import { DustParticle } from 'server/particles/dust/dust';
@@ -51,7 +52,11 @@ export class BallistaHeadScript extends BlockEntityScript<BallistaHeadProperties
       this.operational &&
       this.context.hasResource(this.properties.ammunition)
     ) {
-      if (this.targeting?.target.alive) {
+      if (
+        this.targeting &&
+        this.targeting.clearShot &&
+        this.targeting.target.alive
+      ) {
         const target = this.targeting.target;
         const pos = this.getVoxelPosition();
         const delta = vector.subtract(target.objRef.get_pos(), pos);
@@ -163,7 +168,7 @@ export class BallistaHeadScript extends BlockEntityScript<BallistaHeadProperties
 
     let clearShot = true;
     const dir = vector.direction(pos, targetPos);
-    const tip = vector.offset(pos, dir.x * 0.85, 0, dir.z * 0.85);
+    const tip = vector.offset(pos, dir.x * 0.45, 0.05, dir.z * 0.45);
     for (const pointed of Raycast(tip, targetPos, false, false)) {
       if (!equalVectors(pos, pointed.under)) {
         const nodeUnder = minetest.get_node(pointed.under);
@@ -176,12 +181,12 @@ export class BallistaHeadScript extends BlockEntityScript<BallistaHeadProperties
 
           // can phase through thin walls
           const threshold = 0.15;
-          const forward = {
+          const skip = {
             x: Math.round(pointed.intersection_point.x + dir.x * threshold),
             y: Math.round(pointed.intersection_point.y + dir.y * threshold),
             z: Math.round(pointed.intersection_point.z + dir.z * threshold),
           };
-          if (equalVectors(forward, pointed.under)) {
+          if (equalVectors(skip, pointed.under)) {
             clearShot = false;
             break;
           }
@@ -248,9 +253,6 @@ export class BallistaHeadScript extends BlockEntityScript<BallistaHeadProperties
       checkOperatePositions = true,
     }: { checkDistance?: boolean; checkOperatePositions?: boolean } = {}
   ): boolean {
-    const origin = this.getVoxelPosition();
-    const targetPos = target.objRef.get_pos();
-
     const targeting = this.computeTargeting(target);
     if (checkDistance || checkOperatePositions) {
       if (checkDistance && !targeting.withinRange) return false;
