@@ -1,7 +1,7 @@
-import { BlockScript, BlockCallbacks } from 'server/block/block';
+import { BlockCallbacks, BlockScript, BlockState } from 'server/block/block';
 import { DenProperties } from 'server/block/den/properties';
 import { Faction } from 'server/entity/faction';
-import { Logger } from 'utils/logger';
+import { randomInt } from 'utils/math';
 
 const healInterval = 1;
 
@@ -10,7 +10,11 @@ export class DenScript
   implements BlockCallbacks<DenProperties>
 {
   override initializeNode() {
-    super.initializeNode();
+    super.initializeNode(
+      randomInt(0, 3) === 0
+        ? 'default'
+        : (('rot' + randomInt(1, 3)) as BlockState<DenProperties>)
+    );
     this.getTimer().start(healInterval);
   }
 
