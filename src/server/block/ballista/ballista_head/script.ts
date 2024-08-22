@@ -172,10 +172,6 @@ export class BallistaHeadScript extends BlockEntityScript<BallistaHeadProperties
       0.25 - 0.25 / (1 + distance * 0.6),
       dir.z * 0.72
     );
-    DebugMarker.line(tip, targetPos, {
-      type: DebugMarker.Point.Yellow,
-      duration: this.targetingTimer.seconds,
-    });
     for (const pointed of Raycast(tip, targetPos, false, false)) {
       if (!equalVectors(pos, pointed.under)) {
         const nodeUnder = minetest.get_node(pointed.under);
@@ -183,11 +179,6 @@ export class BallistaHeadScript extends BlockEntityScript<BallistaHeadProperties
           const nodeAbove = minetest.get_node(pointed.above);
           if (!IsNode.shootableThrough(nodeAbove)) {
             clearShot = false;
-            DebugMarker.line(tip, pointed.intersection_point, {
-              type: DebugMarker.Point.Red,
-              duration: this.targetingTimer.seconds,
-              size: vector.new(0.2, 0.2, 0.2),
-            });
             break;
           }
 
@@ -200,11 +191,6 @@ export class BallistaHeadScript extends BlockEntityScript<BallistaHeadProperties
           };
           if (equalVectors(skip, pointed.under)) {
             clearShot = false;
-            DebugMarker.line(tip, pointed.intersection_point, {
-              type: DebugMarker.Point.Red,
-              duration: this.targetingTimer.seconds,
-              size: vector.new(0.2, 0.2, 0.2),
-            });
             break;
           }
         }
