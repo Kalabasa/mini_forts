@@ -82,9 +82,13 @@ export class MoveTask extends Task {
     const path = Tasks.remember(this, pathToDestination, () => {
       const priorityCenter = this.moveDestinationBias;
       if (priorityCenter) {
-        const rankedDestinations = destinations.map((pos) => ({
+        const distances = destinations.map((pos) =>
+          vector.distance(priorityCenter, pos)
+        );
+        const minDistance = Math.min(...distances);
+        const rankedDestinations = destinations.map((pos, i) => ({
           pos,
-          extraCost: 10 / (2 + vector.distance(priorityCenter, pos)),
+          extraCost: (distances[i] - minDistance) * 8,
         }));
         return agent.pathfinder.findPriorityPath(agentPos, rankedDestinations);
       } else {
