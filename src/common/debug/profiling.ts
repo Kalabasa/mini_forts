@@ -4,8 +4,8 @@ import { createLogger } from 'utils/logger';
 const enableProfiling = true;
 
 const timerStatReportCooldownUs = 30 * 1_000_000;
-const reportingThresholdMs = 10;
-const alertSpikeThresholdPercent = 0.25;
+const reportingThresholdMs = 30;
+const alertSpikeThresholdPercent = 0.3;
 
 export const Profiling =
   enableProfiling && CONFIG.isDev
