@@ -222,6 +222,15 @@ function create({
         entity.objRef.set_velocity(ZERO_V);
       } else {
         entity.animation = animationMap.fall;
+        const velocity = entity.objRef.get_velocity();
+        const deltaH = {
+          x: -velocity.x,
+          y: 0,
+          z: -velocity.z,
+        };
+        entity.objRef.set_velocity(
+          vector.add(velocity, vector.multiply(deltaH, 0.6))
+        );
         entity.resetGravity();
       }
       return;
