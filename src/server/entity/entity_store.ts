@@ -175,11 +175,11 @@ export class EntityStore {
 
         if (
           entity.active &&
-          passesFilter(entity, filters) &&
           entityPos.y >= min.y &&
           entityPos.y <= max.y &&
           entityPos.z >= min.z &&
-          entityPos.z <= max.z
+          entityPos.z <= max.z &&
+          passesFilter(entity, filters)
         ) {
           yield entity;
         }
@@ -201,9 +201,12 @@ export class EntityStore {
 
     const radius2 = sphereRadius * sphereRadius;
 
-    for (const entity of this.findVolume({ volume, ...filters })) {
+    for (const entity of this.findVolume({ volume })) {
       const pos = entity.objRef.get_pos();
-      if (sqDist(sphereCenter, pos) <= radius2) {
+      if (
+        sqDist(sphereCenter, pos) <= radius2 &&
+        passesFilter(entity, filters)
+      ) {
         yield entity;
       }
     }
