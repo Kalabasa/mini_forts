@@ -50,67 +50,71 @@ export class BallistaHeadScript extends BlockEntityScript<BallistaHeadProperties
 
     if (
       this.operational &&
-      this.context.hasResource(this.properties.ammunition)
+      this.context.hasResource(this.properties.ammunition) &&
+      this.targeting &&
+      this.targeting.clearShot &&
+      this.targeting.target.alive
     ) {
-      if (
-        this.targeting &&
-        this.targeting.clearShot &&
-        this.targeting.target.alive
-      ) {
-        const target = this.targeting.target;
-        const pos = this.getVoxelPosition();
-        const delta = vector.subtract(target.objRef.get_pos(), pos);
-        const yaw = Math.atan2(delta.z, delta.x) + Math.PI / 4;
-        this.objRef.set_rotation({
-          x: Math.PI / 2,
-          y: yaw,
-          z: 0,
-        });
+      const target = this.targeting.target;
+      const pos = this.getVoxelPosition();
+      const delta = vector.subtract(target.objRef.get_pos(), pos);
+      const yaw = Math.atan2(delta.z, delta.x) + Math.PI / 4;
+      this.objRef.set_rotation({
+        x: Math.PI / 2,
+        y: yaw,
+        z: 0,
+      });
 
-        if (this.shotStage === ShotStage.Idle) {
-          let cooledDown = true;
-          if (this.shotTimer) {
-            cooledDown = this.shotTimer.updateAndCheck(dt);
-          }
-
-          if (cooledDown) {
-            this.shotStage = ShotStage.Charge;
-            this.shotTimer = new CountdownTimer(this.properties.chargeTime);
-            this.animation = this.animations.charge;
-          }
-        } else if (this.shotStage === ShotStage.Charge) {
-          if (this.shotTimer!.updateAndCheck(dt)) {
-            this.shotStage = ShotStage.Hold;
-            this.shotTimer = new CountdownTimer(this.properties.holdTime);
-            this.animation = this.animations.hold;
-          }
-        } else if (this.shotStage === ShotStage.Hold) {
-          if (this.shotTimer!.updateAndCheck(dt)) {
-            this.context.subtractResource(this.properties.ammunition, pos);
-
-            addShotParticles(pos, target.objRef.get_pos());
-            const damage = target.damage(this.properties.shotDamage, pos);
-            if (damage > 0) {
-              BallistaBolt.create(target, pos);
-            }
-
-            this.shotStage = ShotStage.Release;
-            this.shotTimer = new CountdownTimer(this.properties.releaseTime);
-            this.animation = this.animations.release;
-          }
+      if (this.shotStage === ShotStage.Idle) {
+        let cooledDown = true;
+        if (this.shotTimer) {
+          cooledDown = this.shotTimer.updateAndCheck(dt);
         }
+
+        if (cooledDown) {
+          this.shotStage = ShotStage.Charge;
+          this.shotTimer = new CountdownTimer(this.properties.chargeTime);
+          this.animation = this.animations.charge;
+        }
+      } else if (this.shotStage === ShotStage.Charge) {
+        if (this.shotTimer!.updateAndCheck(dt)) {
+          this.shotStage = ShotStage.Hold;
+          this.shotTimer = new CountdownTimer(this.properties.holdTime);
+          this.animation = this.animations.hold;
+        }
+      } else if (this.shotStage === ShotStage.Hold) {
+        if (this.shotTimer!.updateAndCheck(dt)) {
+          this.context.subtractResource(this.properties.ammunition, pos);
+
+          addShotParticles(pos, target.objRef.get_pos());
+          const damage = target.damage(this.properties.shotDamage, pos);
+          if (damage > 0) {
+            BallistaBolt.create(target, pos);
+          }
+
+          this.shotStage = ShotStage.Release;
+          this.shotTimer = new CountdownTimer(this.properties.releaseTime);
+          this.animation = this.animations.release;
+        }
+      }
+    } else {
+      // not shooting
+      if (
+        this.shotStage !== ShotStage.Release &&
+        this.shotStage !== ShotStage.Idle
+      ) {
+        this.shotStage = ShotStage.Idle;
+        this.animation = this.animations.idle;
       }
     }
 
+    // unconditional: release & cooldown
     if (this.shotStage === ShotStage.Release) {
       if (this.shotTimer!.updateAndCheck(dt)) {
         this.shotStage = ShotStage.Idle;
         this.shotTimer = new CountdownTimer(this.properties.cooldownTime);
         this.animation = this.animations.idle;
       }
-    } else if (!this.targeting && this.shotStage !== ShotStage.Idle) {
-      this.shotStage = ShotStage.Idle;
-      this.animation = this.animations.idle;
     }
   }
 
@@ -119,33 +123,27 @@ export class BallistaHeadScript extends BlockEntityScript<BallistaHeadProperties
   }
 
   private updateTargeting() {
-    const preAimBuffer = 2;
-
     if (this.targeting) {
       const target = this.targeting.target;
       if (!target.alive || !target.active) {
         this.targeting = undefined;
       }
 
-      if (
-        this.targeting &&
-        sqDist(this.getVoxelPosition(), target.objRef.get_pos()) >
-          (this.properties.shotRange + preAimBuffer) ** 2
-      ) {
-        this.targeting = undefined;
-      }
-
       if (this.targeting) {
         Object.assign(this.targeting, this.computeTargeting(target));
 
-        if (this.targeting.operatePositions.length === 0) {
+        if (
+          !this.targeting.withinRange ||
+          !this.targeting.clearShot ||
+          this.targeting.operatePositions.length === 0
+        ) {
           this.targeting = undefined;
         }
       }
     }
 
     if (!this.targeting) {
-      const target = this.findTarget(preAimBuffer);
+      const target = this.findTarget();
       if (!target) return null;
 
       this.targeting = {
@@ -211,7 +209,7 @@ export class BallistaHeadScript extends BlockEntityScript<BallistaHeadProperties
     return dot < 0.71;
   }
 
-  private findTarget(addRange: number = 0) {
+  private findTarget() {
     const shotRange = this.properties.shotRange;
     const home = this.context.getHomePosition();
     const pos = this.getVoxelPosition();
@@ -221,7 +219,7 @@ export class BallistaHeadScript extends BlockEntityScript<BallistaHeadProperties
 
     const nearbyTargetCandidates = this.context.entityStore.find({
       sphereCenter: this.getVoxelPosition(),
-      sphereRadius: shotRange + addRange,
+      sphereRadius: shotRange,
       faction: Faction.Attackers,
       alive: true,
       damageable: true,
