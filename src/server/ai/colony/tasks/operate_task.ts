@@ -3,12 +3,9 @@ import { MinionAgent } from 'server/ai/colony/minion_agent';
 import { MoveTask } from 'server/ai/colony/tasks/move_task';
 import { Logger } from 'utils/logger';
 import { OperableBlockRef } from '../operable';
-import { IntervalTimer } from 'utils/timer';
 
 export class OperateTask extends MoveTask {
   readonly position: Vector3D;
-
-  private repathTimer = new IntervalTimer(1.0);
 
   constructor(readonly operable: OperableBlockRef) {
     super(operable.getOperatePositions());
@@ -26,14 +23,16 @@ export class OperateTask extends MoveTask {
   }
 
   override execute(dt: number, agent: MinionAgent): ActionResult {
-    if (this.repathTimer.updateAndCheck(dt)) {
-      this.updateDestinations(this.operable.getOperatePositions());
-    }
-
     const moveResult = super.execute(dt, agent);
     if (moveResult !== ActionResult.Done) return moveResult;
 
-    return agent.operateOperable(this.operable);
+    const operateResult = agent.operateOperable(this.operable);
+    if (operateResult === ActionResult.Stopped) {
+      const operatePositions = this.operable.getOperatePositions();
+      if (operatePositions.length === 0) return ActionResult.Impossible;
+      this.updateDestinations(operatePositions);
+    }
+    return operateResult;
   }
 
   [Logger.Props]() {

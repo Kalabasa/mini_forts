@@ -1,28 +1,13 @@
-import { ActionResult } from "server/ai/action_result";
-import { MinionAgent } from "server/ai/colony/minion_agent";
-import { MoveTask } from "server/ai/colony/tasks/move_task";
-import { WorkerCapabilities } from "server/ai/colony/worker_capabilities";
-import { Logger } from "utils/logger";
+import { ActionResult } from 'server/ai/action_result';
+import { MinionAgent } from 'server/ai/colony/minion_agent';
+import { WorkTask } from 'server/ai/colony/tasks/work_task';
 
-export class DigTask extends MoveTask {
-  constructor(readonly position: Vector3D) {
-    super(WorkerCapabilities.getWorkPositions(position));
+export class DigTask extends WorkTask {
+  constructor(position: Vector3D) {
+    super(position);
   }
 
-  override get positionHint(): Vector3D {
-    return this.position;
-  }
-
-  override execute(dt: number, agent: MinionAgent): ActionResult {
-    const moveResult = super.execute(dt, agent);
-    if (moveResult !== ActionResult.Done) return moveResult;
-
+  override executeWork(dt: number, agent: MinionAgent): ActionResult {
     return agent.workDiggable(this.position);
-  }
-
-  [Logger.Props]() {
-    return {
-      pos: this.position,
-    };
   }
 }

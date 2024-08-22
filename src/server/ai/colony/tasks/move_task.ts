@@ -15,21 +15,17 @@ export class MoveTask extends Task {
     private destinations: Vector3D[],
     protected moveDestinationBias: Vector3D | undefined = undefined
   ) {
-    if (destinations.length === 0) {
-      throwError('Empty destinations array!');
-    }
     super();
   }
 
   override get positionHint(): Vector3D {
+    if (this.destinations.length === 0) {
+      return super.positionHint;
+    }
     return this.destinations[0];
   }
 
   protected updateDestinations(destinations: Vector3D[]) {
-    if (destinations.length === 0) {
-      throwError('Empty destinations array!');
-    }
-
     if (destinationsKey(this.destinations) !== destinationsKey(destinations)) {
       this.destinations = destinations;
       delete this.memory[pathToDestination];
@@ -37,6 +33,8 @@ export class MoveTask extends Task {
   }
 
   override isStrictlyImpossible(): boolean {
+    if (this.destinations.length === 0) return true;
+
     return this.destinations.every(
       (p) =>
         !Locomotion.passableNodeCost(WorkerCapabilities.locomotion.moveCost(p))
@@ -53,6 +51,10 @@ export class MoveTask extends Task {
   }
 
   override execute(dt: number, agent: MinionAgent): ActionResult {
+    if (this.destinations.length === 0) {
+      return ActionResult.Impossible;
+    }
+
     const path = this.getPath(agent);
 
     if (!path.exists()) {
@@ -70,20 +72,24 @@ export class MoveTask extends Task {
   }
 
   getPath(agent: MinionAgent): Path {
+    const destinations = this.destinations;
+    if (destinations.length === 0) {
+      throwError('Cannot initialize move task path. Zero destinations!');
+    }
+
     const agentPos = agent.getVoxelPosition();
 
     const path = Tasks.remember(this, pathToDestination, () => {
       const priorityCenter = this.moveDestinationBias;
-      return priorityCenter
-        ? agent.pathfinder.findPriorityPath(
-            agentPos,
-            this.destinations.map((pos) => ({
-              pos,
-              // todo: normalize so nearest dest is 0
-              extraCost: 10 / (10 + vector.distance(priorityCenter, pos)),
-            }))
-          )
-        : agent.pathfinder.findAnyPath(agentPos, this.destinations);
+      if (priorityCenter) {
+        const rankedDestinations = destinations.map((pos) => ({
+          pos,
+          extraCost: 10 / (2 + vector.distance(priorityCenter, pos)),
+        }));
+        return agent.pathfinder.findPriorityPath(agentPos, rankedDestinations);
+      } else {
+        return agent.pathfinder.findAnyPath(agentPos, destinations);
+      }
     });
 
     // if path is stale
