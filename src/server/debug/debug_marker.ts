@@ -187,6 +187,42 @@ export const DebugMarker = {
       });
     }
   },
+  line(
+    start: Vector3D,
+    end: Vector3D,
+    {
+      type = pointTypes.White,
+      duration = 1,
+      stepDistance = 0.35,
+      size,
+    }: {
+      type?: DebugMarkerType;
+      duration?: number;
+      stepDistance?: number;
+      size?: Vector3D;
+    }
+  ) {
+    let distance = 0;
+    const maxDistance = vector.distance(start, end);
+    const step = vector.multiply(
+      vector.subtract(end, start),
+      stepDistance / maxDistance
+    );
+
+    const p = vector.new(start);
+    while (distance < maxDistance) {
+      DebugMarker.mark(p, {
+        type,
+        duration,
+        size,
+      });
+
+      p.x += step.x;
+      p.y += step.y;
+      p.z += step.z;
+      distance += stepDistance;
+    }
+  },
 };
 
 if (CONFIG.isDev) {

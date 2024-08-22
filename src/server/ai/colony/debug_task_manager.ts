@@ -1,22 +1,22 @@
-import { Profiling } from "common/debug/profiling";
-import { Task, TaskPriority } from "server/ai/colony/task";
-import { TaskManager } from "server/ai/colony/task_manager";
-import { DebugMarker } from "server/debug/debug_marker";
-import { CONFIG } from "utils/config";
-import { IntervalTimer } from "utils/timer";
+import { Profiling } from 'common/debug/profiling';
+import { Task, TaskPriority } from 'server/ai/colony/task';
+import { TaskManager } from 'server/ai/colony/task_manager';
+import { DebugMarker } from 'server/debug/debug_marker';
+import { CONFIG } from 'utils/config';
+import { IntervalTimer } from 'utils/timer';
 
 if (CONFIG.isDev) {
-  minetest.register_chatcommand("debug_taskmanager", {
-    params: "<mode>",
+  minetest.register_chatcommand('debug_taskmanager', {
+    params: '<mode>',
     func: (playerName, param) => {
-      if (!instance) return $multi(false, "No instance");
+      if (!instance) return $multi(false, 'No instance');
 
       const modeParam = param.trim();
-      let mode: DebugTaskManager["debugMode"] = null;
+      let mode: DebugTaskManager['debugMode'] = null;
       if (modeParam.length === 0) {
-        mode = instance.debugMode == null ? "continuous" : null;
+        mode = instance.debugMode == null ? 'continuous' : null;
       } else {
-        if (modeParam === "step" || modeParam === "continuous") {
+        if (modeParam === 'step' || modeParam === 'continuous') {
           mode = modeParam;
         } else {
           return $multi(false, `Invalid mode parameter.`);
@@ -28,13 +28,13 @@ if (CONFIG.isDev) {
         instance.dump();
         return $multi(true, `TaskManager debug on (${instance.debugMode})`);
       } else {
-        return $multi(true, "TaskManager debug off");
+        return $multi(true, 'TaskManager debug off');
       }
     },
   });
-  minetest.register_chatcommand("taskmanager_step", {
+  minetest.register_chatcommand('taskmanager_step', {
     func: () => {
-      if (!instance) return $multi(false, "No instance");
+      if (!instance) return $multi(false, 'No instance');
       instance.stepFlag = true;
       return $multi(true);
     },
@@ -53,14 +53,14 @@ export class DebugTaskManager extends TaskManager {
     return (instance = new DebugTaskManager(...params));
   }
 
-  debugMode: "step" | "continuous" | null = null;
+  debugMode: 'step' | 'continuous' | null = null;
   stepFlag = false;
   private debugTimer = new IntervalTimer(debugMarkerDuration);
 
   override distributeTasks(
-    ...args: Parameters<TaskManager["distributeTasks"]>
+    ...args: Parameters<TaskManager['distributeTasks']>
   ) {
-    if (this.debugMode === "step") {
+    if (this.debugMode === 'step') {
       if (this.stepFlag) {
         this.stepFlag = false;
       } else {
@@ -68,24 +68,24 @@ export class DebugTaskManager extends TaskManager {
       }
     }
 
-    Profiling.startTimer("distributeTasks");
+    Profiling.startTimer('distributeTasks');
     const result = super.distributeTasks(...args);
-    Profiling.endTimer("distributeTasks");
+    Profiling.endTimer('distributeTasks');
     return result;
   }
 
   dump() {
-    this.logger.trace("TaskManager dump");
-    this.logger.trace("----------------");
+    this.logger.trace('TaskManager dump');
+    this.logger.trace('----------------');
 
     this.logger.trace(`Free agents (${this.freeAgents.size}):`);
     for (const agent of this.freeAgents) {
-      this.logger.trace(" ", agent, agent.getVoxelPosition());
+      this.logger.trace(' ', agent, agent.getVoxelPosition());
     }
 
     this.logger.trace(`Busy agents (${this.busyAgents.size}):`);
     for (const agent of this.busyAgents) {
-      this.logger.trace(" ", agent, agent.getVoxelPosition());
+      this.logger.trace(' ', agent, agent.getVoxelPosition());
     }
 
     for (const priority of priorities) {
@@ -94,7 +94,7 @@ export class DebugTaskManager extends TaskManager {
         `Backlog tasks [priority:${TaskPriority[priority]}] (${backlogTasks.size}):`
       );
       for (const task of backlogTasks) {
-        this.logger.trace(" ", task);
+        this.logger.trace(' ', task);
       }
     }
 
@@ -104,24 +104,24 @@ export class DebugTaskManager extends TaskManager {
         `Unassigned tasks [priority:${TaskPriority[priority]}] (${unassignedTasks.size}):`
       );
       for (const task of unassignedTasks) {
-        this.logger.trace(" ", task);
+        this.logger.trace(' ', task);
       }
     }
 
     this.logger.trace(`Assigned tasks(${this.assignedTasks.size}):`);
     for (const task of this.assignedTasks) {
-      this.logger.trace(" ", task);
+      this.logger.trace(' ', task);
     }
   }
 
   override update(
-    ...params: Parameters<TaskManager["update"]>
-  ): ReturnType<TaskManager["update"]> {
+    ...params: Parameters<TaskManager['update']>
+  ): ReturnType<TaskManager['update']> {
     if (this.debugTimer.updateAndCheck(params[0]) && this.debugMode) {
       for (const agent of this.freeAgents) {
         DebugMarker.mark(agent.getVoxelPosition(), {
           type: DebugMarker.Point.Cyan,
-          nametag: "Free",
+          nametag: 'Free',
           duration: debugMarkerDuration,
         });
       }
@@ -131,29 +131,31 @@ export class DebugTaskManager extends TaskManager {
 
         DebugMarker.mark(agent.getVoxelPosition(), {
           type: DebugMarker.Point.Blue,
-          nametag: task ? taskName(task) : "Busy",
+          nametag: task ? taskName(task) : 'Busy',
           duration: debugMarkerDuration,
         });
 
-        if (task && "position" in task) {
+        if (task && 'position' in task) {
           const { position } = task;
-          drawLine(agent.getPosition(), position, DebugMarker.Point.Blue);
+          DebugMarker.line(agent.getPosition(), position, {
+            type: DebugMarker.Point.Blue,
+          });
         }
       }
 
       for (const priority of priorities) {
         const backlogTasks = this.backlogTasks[priority] as Set<DebugTask>;
-        debugTasks(backlogTasks, "B", "Red");
+        debugTasks(backlogTasks, 'B', 'Red');
       }
 
       for (const priority of priorities) {
         const unassignedTasks = this.unassignedTasks[
           priority
         ] as Set<DebugTask>;
-        debugTasks(unassignedTasks, "U", "Yellow");
+        debugTasks(unassignedTasks, 'U', 'Yellow');
       }
 
-      debugTasks(this.assignedTasks as Set<DebugTask>, "A", "Green");
+      debugTasks(this.assignedTasks as Set<DebugTask>, 'A', 'Green');
     }
 
     return super.update(...params);
@@ -170,17 +172,17 @@ type DebugTask = Task &
 
 function taskName(task: DebugTask): string | undefined {
   const name = task.constructor.name;
-  if (name.length > "Task".length && name.endsWith("Task")) {
-    return name.slice(0, -"Task".length);
+  if (name.length > 'Task'.length && name.endsWith('Task')) {
+    return name.slice(0, -'Task'.length);
   }
   return name;
 }
 
 function prioritySuffix(priority: TaskPriority) {
-  let n = "";
+  let n = '';
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   for (const i of $range(1, priority)) {
-    n += "*";
+    n += '*';
   }
   return n;
 }
@@ -188,11 +190,11 @@ function prioritySuffix(priority: TaskPriority) {
 function debugTasks(
   tasks: Set<DebugTask>,
   prefix: string,
-  markerName: keyof (typeof DebugMarker)["Point" | "Volume"]
+  markerName: keyof (typeof DebugMarker)['Point' | 'Volume']
 ) {
   for (const task of tasks) {
     const nametag = prefix + prioritySuffix(task.priority);
-    if ("position" in task) {
+    if ('position' in task) {
       DebugMarker.mark(task.position, {
         type: DebugMarker.Volume[markerName],
         nametag,
@@ -207,32 +209,5 @@ function debugTasks(
         duration: debugMarkerDuration,
       });
     }
-  }
-}
-
-function drawLine(
-  start: Vector3D,
-  end: Vector3D,
-  markerType: (typeof DebugMarker.Point)[keyof typeof DebugMarker.Point]
-) {
-  let distance = 0;
-  const stepSize = 0.3;
-  const maxDistance = vector.distance(start, end);
-  const step = vector.multiply(
-    vector.subtract(end, start),
-    stepSize / maxDistance
-  );
-
-  const p = vector.new(start);
-  while (distance < maxDistance) {
-    DebugMarker.mark(p, {
-      type: markerType,
-      duration: debugMarkerDuration,
-    });
-
-    p.x += step.x;
-    p.y += step.y;
-    p.z += step.z;
-    distance += stepSize;
   }
 }
