@@ -261,7 +261,7 @@ function create({
         (c) => c.type === 'node' && c.axis === climbCollision!.axis
       );
 
-      const climbSpeed0 = stillHasObstacle ? climbSpeed : 2; // final push to vault over the ledge
+      const climbSpeed0 = stillHasObstacle ? climbSpeed : 1; // final push to vault over the ledge
       const grip = vector.multiply(dirH, 2);
 
       entity.objRef.set_velocity({ x: grip.x, y: climbSpeed0, z: grip.z });
@@ -274,7 +274,7 @@ function create({
       } else {
         entity.animation = animationMap.fall;
         const velocity = entity.objRef.get_velocity();
-        const targetVelocity = vector.multiply(dirH, Math.min(0.3, walkSpeed));
+        const targetVelocity = vector.multiply(dirH, Math.min(0.2, walkSpeed));
         const deltaH = vector.subtract(targetVelocity, velocity);
         deltaH.y = 0;
         entity.objRef.set_velocity(
