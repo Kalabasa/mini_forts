@@ -76,6 +76,7 @@ export class BeetleScript extends EnemyEntityScript<BeetleProperties> {
     this.context.setBlock(FertileSoilDef, pos);
     this.carrying = false;
     this.placeTimer.reset();
+    this.animation = this.properties.unburdenedAnimations.stand;
     return true;
   }
 }

@@ -20,7 +20,7 @@ export class CrystalExplosionScript extends EntityScript<CrystalExplosionPropert
   private lastRadius = 0;
 
   override activate(): void {
-    this.animation = this.properties.animations.explode;
+    this.animation = this.animations.explode;
     this.objRef.set_rotation({ x: Math.PI / 2, y: 0, z: 0 });
     minetest.add_particle(this.createParticle(this.objRef.get_pos()));
   }
@@ -56,8 +56,8 @@ export class CrystalExplosionScript extends EntityScript<CrystalExplosionPropert
 
   private createParticle(pos: Vector3D): ParticleDefinition {
     const time =
-      this.properties.animations.explode.numFrames *
-      this.properties.animations.explode.frameDuration;
+      this.animations.explode.numFrames *
+      this.animations.explode.frameDuration;
 
     return {
       pos,

@@ -6,13 +6,14 @@ import { PassableNodes } from 'server/entity/locomotion/locomotion';
 import { WalkClimbLocomotion } from 'server/entity/locomotion/walk_climb';
 import { defaultCollisionBox, PersistentEntity } from 'server/entity/entity';
 
-const carryingMoveAnimation: Animation = {
-  startFrame: { x: 0, y: 0 },
-  numFrames: 1,
+const unburdenedMoveAnimation = {
+  startFrame: { x: 2, y: 0 },
+  numFrames: 2,
+  frameDuration: 0.2,
 };
 
-const unburdenedMoveAnimation: Animation = {
-  startFrame: { x: 1, y: 0 },
+const deathAnimation = {
+  startFrame: { x: 3, y: 0 },
   numFrames: 1,
 };
 
@@ -23,21 +24,34 @@ export class BeetleProperties extends EnemyEntityProperties {
   override health = 10;
 
   attackRange = 1.2;
-  attackInterval = 0.9;
+  attackInterval = 1.4;
 
   carryingAnimations = Animation.createMap({
-    stand: carryingMoveAnimation,
-    walk: carryingMoveAnimation,
-    climb: carryingMoveAnimation,
-    fall: carryingMoveAnimation,
+    stand: {
+      startFrame: { x: 0, y: 0 },
+      numFrames: 1,
+    },
+    walk: {
+      startFrame: { x: 0, y: 0 },
+      numFrames: 2,
+      frameDuration: 0.3,
+    },
+    climb: {
+      startFrame: { x: 1, y: 0 },
+      numFrames: 2,
+      frameDuration: 0.9,
+    },
+    fall: {
+      startFrame: { x: 0, y: 0 },
+      numFrames: 2,
+      frameDuration: 0.2,
+    },
+    // unused
     attack: {
       startFrame: { x: 0, y: 0 },
       numFrames: 1,
     },
-    die: {
-      startFrame: { x: 1, y: 0 },
-      numFrames: 1,
-    },
+    die: deathAnimation,
   });
 
   unburdenedAnimations = Animation.createMap({
@@ -46,13 +60,11 @@ export class BeetleProperties extends EnemyEntityProperties {
     climb: unburdenedMoveAnimation,
     fall: unburdenedMoveAnimation,
     attack: {
-      startFrame: { x: 1, y: 0 },
-      numFrames: 1,
+      startFrame: { x: 4, y: 0 },
+      numFrames: 2,
+      frameDuration: this.attackInterval / 2,
     },
-    die: {
-      startFrame: { x: 1, y: 0 },
-      numFrames: 1,
-    },
+    die: deathAnimation,
   });
 
   animations = this.carryingAnimations;
@@ -76,7 +88,7 @@ export class BeetleProperties extends EnemyEntityProperties {
   objectProperties: ObjectProperties = {
     visual: 'sprite',
     textures: [tex('beetle.png')],
-    spritediv: { x: 2, y: 1 },
+    spritediv: { x: 5, y: 2 },
     physical: true,
     collide_with_objects: false,
     collisionbox: defaultCollisionBox,
