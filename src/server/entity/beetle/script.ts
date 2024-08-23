@@ -3,6 +3,8 @@ import { FertileSoilDef } from 'server/block/fertile_soil/def';
 import { BeetleProperties } from 'server/entity/beetle/properties';
 import { EnemyEntityScript } from 'server/entity/enemy_entity/enemy_entity';
 import { Entity } from 'server/entity/entity';
+import { ResourceType } from 'server/game/resources';
+import { randomInt } from 'utils/math';
 import { CountdownTimer } from 'utils/timer';
 
 export class BeetleScript extends EnemyEntityScript<BeetleProperties> {
@@ -78,5 +80,12 @@ export class BeetleScript extends EnemyEntityScript<BeetleProperties> {
     this.placeTimer.reset();
     this.animation = this.properties.unburdenedAnimations.stand;
     return true;
+  }
+
+  override onDecay(): void {
+    this.context.addResource(
+      { type: ResourceType.Spore, amount: randomInt(4, 6) },
+      this.objRef.get_pos()
+    );
   }
 }

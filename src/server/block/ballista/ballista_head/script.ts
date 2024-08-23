@@ -3,7 +3,6 @@ import { WorkerCapabilities } from 'server/ai/colony/worker_capabilities';
 import { BallistaBolt } from 'server/block/ballista/ballista_head/ballista_bolt';
 import { BallistaHeadProperties } from 'server/block/ballista/ballista_head/properties';
 import { BlockEntityScript } from 'server/block/entity_block/block_entity';
-import { DebugMarker } from 'server/debug/debug_marker';
 import { Entity } from 'server/entity/entity';
 import { Faction } from 'server/entity/faction';
 import { DustParticle } from 'server/particles/dust/dust';

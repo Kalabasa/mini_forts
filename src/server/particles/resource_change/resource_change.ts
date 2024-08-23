@@ -50,6 +50,7 @@ ${numberParts}:\
 ${numberType.width - 1},${y}=${iconTex}\
 `;
 
+  const pos = vector.offset(position, 0, 0.5, 0);
   let velocity;
   let acceleration;
 
@@ -63,7 +64,7 @@ ${numberType.width - 1},${y}=${iconTex}\
 
   return {
     ...baseDef,
-    pos: position,
+    pos,
     velocity,
     acceleration,
     texture,
