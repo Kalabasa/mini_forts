@@ -138,6 +138,7 @@ export class Director {
   private calculateResourceAmountsIdealRange(
     type: ResourceType
   ): [number, number] {
+    // todo: optimise (this function is called for each type)
     let b = 0;
     const buildTasks = this.colonyAI.getBuildTasks();
     for (const buildTask of buildTasks) {
