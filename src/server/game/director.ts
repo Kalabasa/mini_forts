@@ -1,4 +1,5 @@
 import { IsNode } from 'common/block/is_node';
+import { ColonyAI } from 'server/ai/colony/colony_ai';
 import { TaskPriority } from 'server/ai/colony/task';
 import { Pathfinder } from 'server/ai/pathfinder/pathfinder';
 import { CoreCrystalDef } from 'server/block/core_crystal/def';
@@ -50,7 +51,10 @@ export class Director {
 
   private eventTimer = new IntervalTimer(10);
 
-  constructor(private readonly game: Game) {
+  constructor(
+    private readonly game: Game,
+    private readonly colonyAI: ColonyAI
+  ) {
     game.events.onFor(LoadMapChunkEvent, this, this.onLoadMapChunk);
   }
 
@@ -134,15 +138,24 @@ export class Director {
   private calculateResourceAmountsIdealRange(
     type: ResourceType
   ): [number, number] {
+    let b = 0;
+    const buildTasks = this.colonyAI.getBuildTasks();
+    for (const buildTask of buildTasks) {
+      const resource = buildTask.block.properties.resource;
+      if (type === resource.type) {
+        b += resource.amount;
+      }
+    }
+
     const e = this.enemies.size;
     if (type === ResourceType.Wood) {
-      return [0, 20 + e * 2];
+      return [0, 40 + b * 2];
     } else if (type === ResourceType.Stone) {
-      return [0, 30 + e * 3];
+      return [0, 60 + b * 2];
     } else if (type === ResourceType.Metal) {
-      return [10, 20 + e * 10];
+      return [0, 40 + b * 2 + e * 10];
     } else if (type === ResourceType.Spore) {
-      return [0, 160];
+      return [0, 160 + b * 2];
     } else {
       unreachableCase(type);
     }

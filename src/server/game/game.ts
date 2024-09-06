@@ -53,7 +53,7 @@ export class Game implements GameContext {
   readonly players = new Set<RemotePlayer>();
   readonly blockPhysics: BlockPhysicsEngine;
 
-  private readonly director = new Director(this);
+  private readonly director: Director;
 
   resources: Record<ResourceType, number> = {
     [ResourceType.Wood]: 0,
@@ -74,6 +74,7 @@ export class Game implements GameContext {
     private readonly colonyAI: ColonyAI
   ) {
     this.blockPhysics = new BlockPhysicsEngine(blockManager);
+    this.director = new Director(this, colonyAI);
 
     this.events.onFor(LoadStageHomeEvent, this, this.handleLoadStageHomeEvent);
     this.events.onFor(AddEntityEvent, this, this.handleAddEntityEvent);

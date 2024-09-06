@@ -254,6 +254,10 @@ export class ColonyAI {
     }
   }
 
+  getBuildTasks(): Iterable<BuildTask> {
+    return this.buildTasks.values();
+  }
+
   addDiggable(position: Vector3D): void {
     const task = new DigTask(position);
     this.digTasks.set(posKey(position), task);
