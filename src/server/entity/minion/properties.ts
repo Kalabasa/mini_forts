@@ -2,7 +2,6 @@ import { snd, tex } from 'resource_id';
 import { Animation } from 'server/entity/animation';
 import { EntityProperties, PersistentEntity } from 'server/entity/entity';
 import { Faction } from 'server/entity/faction';
-import { PassableNodes } from 'server/entity/locomotion/locomotion';
 import { WalkClimbLocomotion } from 'server/entity/locomotion/walk_climb';
 import { Resource, ResourceType } from 'server/game/resources';
 import { defaultCollisionBox } from 'server/entity/entity';
@@ -73,7 +72,7 @@ export class MinionProperties extends EntityProperties {
   });
 
   locomotion = WalkClimbLocomotion.create({
-    passableNodes: PassableNodes.PassDoors,
+    passableNodes: WalkClimbLocomotion.PassableNodes.PassDoors,
     walkSpeed: 3,
     climbSpeed: 1.5,
     animationMap: this.animations,

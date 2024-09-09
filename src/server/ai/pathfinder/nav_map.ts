@@ -148,7 +148,7 @@ export class NavMap {
     if (a.partition == null || b.partition == null) return;
     if (a.partition !== b.partition) return;
 
-    this.logger.trace("recomputePartitionsFromUnreachable", a, b);
+    this.logger.trace('recomputePartitionsFromUnreachable', a, b);
 
     // try recomputing b
     b.partition = this.nextPartition++;
@@ -203,7 +203,10 @@ export class NavMap {
               }
             } else {
               // intersection with external partition
-              this.logger.trace('merge with external partition', comp.partition);
+              this.logger.trace(
+                'merge with external partition',
+                comp.partition
+              );
               // stop current frontier
               frontiers[current.partition].active = false;
               // start new frontier based on external partition number
@@ -328,9 +331,9 @@ export class NavCell {
     }
 
     const { locomotion } = this.map;
-    const { adjacentNodes, moveCost } = locomotion;
+    const { adjacentNodes, nodeCost, moveCost } = locomotion;
 
-    if (!Locomotion.passableNodeCost(moveCost(position))) {
+    if (!Locomotion.passableNodeCost(nodeCost(position))) {
       return undefined;
     }
 
@@ -354,7 +357,8 @@ export class NavCell {
         const nextKey = voxelKey(next);
         if (
           !visited.has(nextKey) &&
-          Locomotion.passableNodeCost(moveCost(next, cur))
+          Locomotion.passableNodeCost(nodeCost(next)) &&
+          moveCost(cur, next, true) < Infinity
         ) {
           open.push(next);
           visited.add(nextKey);
@@ -413,7 +417,7 @@ export class NavCell {
                   d.y === nextPortal.y - portal.y &&
                   d.z === nextPortal.z - portal.z
               ) &&
-              Locomotion.passableNodeCost(moveCost(nextPortal, portal))
+              moveCost(portal, nextPortal, true) < Infinity
             ) {
               // fixme: allow usage in invalidatePartitions without throwing
               // spread partition numbers
@@ -452,7 +456,7 @@ export class NavCell {
     this.components.clear();
 
     const { locomotion, adjacentCellDeltas } = this.map;
-    const { adjacentNodes, moveCost } = locomotion;
+    const { adjacentNodes, nodeCost, moveCost } = locomotion;
 
     const cellPos = this.getCellPos();
     const extent = this.volume.getExtent();
@@ -468,7 +472,7 @@ export class NavCell {
     const portals: Record<number, Record<Direction, boolean>> = {};
 
     this.volume.forEach((pos, index) => {
-      if (!Locomotion.passableNodeCost(moveCost(pos))) {
+      if (!Locomotion.passableNodeCost(nodeCost(pos))) {
         set[index] = undefined;
         return;
       }
@@ -485,7 +489,8 @@ export class NavCell {
           const nextIndex = this.volume.index(nextPos.x, nextPos.y, nextPos.z);
           if (
             nextIndex < index &&
-            Locomotion.passableNodeCost(moveCost(nextPos, pos))
+            Locomotion.passableNodeCost(nodeCost(nextPos)) &&
+            moveCost(pos, nextPos, true) < Infinity
           ) {
             // merge sets
             let nextRoot = set[nextIndex]!;

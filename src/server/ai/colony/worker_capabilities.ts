@@ -1,10 +1,9 @@
 import { IsNode } from 'common/block/is_node';
-import { PassableNodes } from 'server/entity/locomotion/locomotion';
 import { WalkClimbLocomotion } from 'server/entity/locomotion/walk_climb';
 
 // dummy locomotion object used for node cost
 const locomotion = WalkClimbLocomotion.create({
-  passableNodes: PassableNodes.PassDoors,
+  passableNodes: WalkClimbLocomotion.PassableNodes.PassDoors,
   walkSpeed: 0,
   climbSpeed: 0,
   animationMap: undefined as any,

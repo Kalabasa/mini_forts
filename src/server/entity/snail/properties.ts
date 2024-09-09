@@ -2,7 +2,6 @@ import { tex } from 'resource_id';
 import { Animation } from 'server/entity/animation';
 import { EnemyEntityProperties } from 'server/entity/enemy_entity/enemy_entity';
 import { Faction } from 'server/entity/faction';
-import { PassableNodes } from 'server/entity/locomotion/locomotion';
 import { WalkClimbLocomotion } from 'server/entity/locomotion/walk_climb';
 import { defaultCollisionBox } from 'server/entity/entity';
 
@@ -61,7 +60,7 @@ export class SnailProperties extends EnemyEntityProperties {
   });
 
   locomotion = WalkClimbLocomotion.create({
-    passableNodes: PassableNodes.BreakBuildings,
+    passableNodes: WalkClimbLocomotion.PassableNodes.BreakBuildings,
     walkSpeed: 0.5,
     climbSpeed: 0.5,
     animationMap: this.animations,

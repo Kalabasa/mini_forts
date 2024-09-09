@@ -13,8 +13,10 @@ function followablePath(
   return [path.getSource(), path.getStep()]
     .filter((p): p is NonNullable<typeof p> => p != null)
     .every((pathPos) => {
-      return Locomotion.passableNodeCost(
-        locomotion.moveCost(pathPos, locomotion.normalizePathSource(from))
+      return (
+        Locomotion.passableNodeCost(locomotion.nodeCost(pathPos)) &&
+        locomotion.moveCost(locomotion.normalizePathSource(from), pathPos) <
+          Infinity
       );
     });
 }

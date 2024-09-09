@@ -63,7 +63,8 @@ export class LeaveBuildSiteTask extends Task {
           const nextKey = voxelKey(next);
           if (
             !visited.has(nextKey) &&
-            Locomotion.passableNodeCost(agent.locomotion.moveCost(next, cur))
+            Locomotion.passableNodeCost(agent.locomotion.nodeCost(next)) &&
+            agent.locomotion.moveCost(cur, next, true) < Infinity
           ) {
             open.push(next);
             visited.add(nextKey); // preemptive

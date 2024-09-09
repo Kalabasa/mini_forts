@@ -12,11 +12,16 @@ export type Locomotion = {
   /** @noSelf */
   normalizePathSource(position: Vector3D): Vector3D;
   /**
-   * Movement cost for traversing position.
-   * If fromOrTo is supplied, cost to move between the positions is added.
+   * Cost of entering a position.
+   *   0=air, (0,Inf)=passable solid, Inf=impassable solid
    * @noSelf
    */
-  moveCost(position: Vector3D, fromOrTo?: Vector3D): number;
+  nodeCost(position: Vector3D): number;
+  /**
+   * Cost of moving from one valid position to an adjacent valid position.
+   * @noSelf
+   */
+  moveCost(from: Vector3D, to: Vector3D, reversible?: boolean): number;
   /**
    * Updates an entity's targetLocation while advancing the specified path.
    * @noSelf
@@ -30,27 +35,21 @@ export type Locomotion = {
   ): void;
 };
 
-export enum PassableNodes {
-  Default,
-  PassDoors,
-  BreakBuildings,
-}
-
 export const Locomotion = {
-  // Node costs: 0=air, (0,Inf)=passable solid, Inf=impassable solid
+  /** @deprecated use locomotion.nodeCost() */
   nodeCostImpl: {
-    [PassableNodes.Default]: (node: Node) =>
-      IsNode.solid(node) ? Infinity : 0,
-    [PassableNodes.PassDoors]: (node: Node) => {
+    [/* Default */ 0]: (node: Node) => (IsNode.solid(node) ? Infinity : 0),
+    [/* PassDoors */ 1]: (node: Node) => {
       if (!IsNode.solid(node)) return 0;
       return isPassableDoor(node) ? 1 : Infinity;
     },
-    [PassableNodes.BreakBuildings]: (node: Node) => {
+    [/* BreakBuildings */ 2]: (node: Node) => {
       if (IsNode.breakableBuilding(node)) return randomInt(20, 40);
       return IsNode.solid(node) ? Infinity : 0;
     },
   },
   passableNodeCost: (cost: number) => cost < Infinity,
+  /** @deprecated use IsNode.isSolid() */
   solidNodeCost: (cost: number) => cost > 0,
 };
 

@@ -37,7 +37,7 @@ export class MoveTask extends Task {
 
     return this.destinations.every(
       (p) =>
-        !Locomotion.passableNodeCost(WorkerCapabilities.locomotion.moveCost(p))
+        !Locomotion.passableNodeCost(WorkerCapabilities.locomotion.nodeCost(p))
     );
   }
 

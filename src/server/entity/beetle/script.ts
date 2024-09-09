@@ -6,6 +6,7 @@ import { Entity } from 'server/entity/entity';
 import { ResourceType } from 'server/game/resources';
 import { randomInt } from 'utils/math';
 import { CountdownTimer } from 'utils/timer';
+import { Locomotion } from 'server/entity/locomotion/locomotion';
 
 export class BeetleScript extends EnemyEntityScript<BeetleProperties> {
   private carrying = true;
@@ -63,11 +64,13 @@ export class BeetleScript extends EnemyEntityScript<BeetleProperties> {
   private isGoodPlacement(pos: Vector3D, obstaclePos: Vector3D): boolean {
     return (
       !IsNode.solid(minetest.get_node(vector.offset(pos, 0, 1, 0))) &&
-      !IsNode.solid(minetest.get_node(vector.offset(pos, 0, 2, 0))) &&
-      (this.locomotion.moveCost(vector.offset(obstaclePos, 0, 1, 0)) <
-        Infinity ||
-        this.locomotion.moveCost(vector.offset(obstaclePos, 0, 2, 0)) <
-          Infinity)
+      ((!IsNode.solid(minetest.get_node(vector.offset(pos, 0, 2, 0))) &&
+        !IsNode.solid(
+          minetest.get_node(vector.offset(obstaclePos, 0, 2, 0))
+        )) ||
+        Locomotion.passableNodeCost(
+          this.locomotion.nodeCost(vector.offset(obstaclePos, 0, 1, 0))
+        ))
     );
   }
 

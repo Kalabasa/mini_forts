@@ -32,7 +32,7 @@ export interface Path {
   exists(): boolean;
   estimateCost(): number;
   hasNext(): boolean;
-  getStep(): Vector3D | undefined;
+  getStep(offset?: number): Vector3D | undefined;
   advance(): void;
   restart(source: Vector3D): void;
 }
@@ -167,11 +167,11 @@ export class FindPath implements Path {
     );
   }
 
-  getStep(): Vector3D | undefined {
+  getStep(offset: number = 0): Vector3D | undefined {
     this.ensureComputed();
     if (!this.exists()) return undefined;
 
-    const pathNode = this.partialPath[this.partialPathIndex];
+    const pathNode = this.partialPath[this.partialPathIndex + offset];
     return pathNode?.position;
   }
 
@@ -181,36 +181,6 @@ export class FindPath implements Path {
 
     if (this.partialPathIndex < this.partialPath.length - 1) {
       this.partialPathIndex++;
-
-      // check if we can cut corners by going diagonal
-      if (this.partialPathIndex < this.partialPath.length - 1) {
-        const prev = this.partialPath[this.partialPathIndex - 1];
-        const cur = this.partialPath[this.partialPathIndex];
-        const next = this.partialPath[this.partialPathIndex + 1];
-        if (
-          prev.position.y === next.position.y &&
-          cur.position.y === next.position.y &&
-          Math.abs(next.position.x - prev.position.x) === 1 &&
-          Math.abs(next.position.z - prev.position.z) === 1
-        ) {
-          const costX = this.locomotion.moveCost({
-            x: next.position.x,
-            y: next.position.y,
-            z: prev.position.z,
-          });
-          const costZ = this.locomotion.moveCost({
-            x: prev.position.x,
-            y: next.position.y,
-            z: next.position.z,
-          });
-          if (
-            !Locomotion.solidNodeCost(costX) &&
-            !Locomotion.solidNodeCost(costZ)
-          ) {
-            this.partialPathIndex++;
-          }
-        }
-      }
     } else if (this.coarsePathIndex < this.coarsePath.length) {
       const currentCoarseNode = this.coarsePath[this.coarsePathIndex];
       this.coarsePathIndex++;
@@ -315,11 +285,7 @@ export class FindPath implements Path {
 
     while (open.size > 0) {
       if (open.size > 700) {
-        this.logger.error(
-          'Too many nodes! (coarse)',
-          source,
-          destinations
-        );
+        this.logger.error('Too many nodes! (coarse)', source, destinations);
         return undefined;
       }
 
@@ -452,11 +418,7 @@ export class FindPath implements Path {
 
     while (open.size > 0) {
       if (open.size > 300) {
-        this.logger.error(
-          'Too many nodes! (voxel)',
-          source,
-          destinations
-        );
+        this.logger.error('Too many nodes! (voxel)', source, destinations);
         return undefined;
       }
 
@@ -527,34 +489,40 @@ export class FindPath implements Path {
             const nextKey = nodeKey(nextPos);
             const visitedNext = visited.get(nextKey);
 
-            const cost = this.locomotion.moveCost(nextPos, current.position);
-            if (cost < Infinity) {
-              const nextCost = current.costFromSource + cost;
+            const nodeCost = this.locomotion.nodeCost(nextPos);
+            if (Locomotion.passableNodeCost(nodeCost)) {
+              const moveCost = this.locomotion.moveCost(
+                current.position,
+                nextPos
+              );
+              if (moveCost < Infinity) {
+                const nextCost = current.costFromSource + nodeCost + moveCost;
 
-              // Same check as on visit - optimization to limit the size of the open set.
-              if (
-                visitedNext == undefined ||
-                visitedNext.costFromSource > nextCost
-              ) {
-                let nextComp: NavComponent | undefined = current.component;
-
+                // Same check as on visit - optimization to limit the size of the open set.
                 if (
-                  nextComp == null ||
-                  !nextComp.cell.volume.containsPoint(nextPos)
+                  visitedNext == undefined ||
+                  visitedNext.costFromSource > nextCost
                 ) {
-                  // since nextPos is reached in a valid way - there must be a component here
-                  nextComp = this.navMap.findComponent(nextPos)!;
-                }
+                  let nextComp: NavComponent | undefined = current.component;
 
-                const nextNode = {
-                  position: nextPos,
-                  component: nextComp,
-                  from: current,
-                  costFromSource: nextCost,
-                  value:
-                    nextCost + this.estimateVoxelCost(nextPos, goalPos) * 2,
-                };
-                open.add(nextNode);
+                  if (
+                    nextComp == null ||
+                    !nextComp.cell.volume.containsPoint(nextPos)
+                  ) {
+                    // since nextPos is reached in a valid way - there must be a component here
+                    nextComp = this.navMap.findComponent(nextPos)!;
+                  }
+
+                  const nextNode = {
+                    position: nextPos,
+                    component: nextComp,
+                    from: current,
+                    costFromSource: nextCost,
+                    value:
+                      nextCost + this.estimateVoxelCost(nextPos, goalPos) * 2,
+                  };
+                  open.add(nextNode);
+                }
               }
             }
           }

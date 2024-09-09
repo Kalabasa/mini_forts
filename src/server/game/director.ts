@@ -206,10 +206,8 @@ export class Director {
           const pos = vector.add(basePos, { x, y: 0, z });
           const under = vector.add(basePos, { x, y: -1, z });
           if (
-            !Locomotion.solidNodeCost(
-              type.properties.locomotion.moveCost(pos)
-            ) &&
-            Locomotion.solidNodeCost(type.properties.locomotion.moveCost(under))
+            !IsNode.solid(minetest.get_node(pos)) &&
+            IsNode.solid(minetest.get_node(under))
           ) {
             possibleLocations.push(pos);
           }

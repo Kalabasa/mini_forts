@@ -1,3 +1,4 @@
+import { getNodeDef } from 'common/block/get_node_def';
 import { IsNode } from 'common/block/is_node';
 import { getNodeSupport } from 'common/block/physics';
 import { BlockTag } from 'common/block/tag';
@@ -5,8 +6,8 @@ import { ActionResult } from 'server/ai/action_result';
 import { Path } from 'server/ai/pathfinder/path';
 import { Animation } from 'server/entity/animation';
 import { Entity } from 'server/entity/entity';
-import { Locomotion, PassableNodes } from 'server/entity/locomotion/locomotion';
-import { equalVectors, ZERO_V } from 'utils/math';
+import { Locomotion } from 'server/entity/locomotion/locomotion';
+import { equalVectors, randomInt, ZERO_V } from 'utils/math';
 import { predicate } from 'utils/tstl';
 
 type NodeCollision = Collision & { type: 'node' };
@@ -26,10 +27,36 @@ const adjacentNodes = [
   { x: 0, y: 1, z: 1 },
 ] as const;
 
+// todo: just use string keys?
+enum PassableNodes {
+  Default,
+  PassDoors,
+  BreakBuildings,
+}
+
 export const WalkClimbLocomotion = {
   create,
   adjacentNodes,
+  PassableNodes,
 };
+
+const nodePassCostImpl = {
+  [PassableNodes.Default]: (node: Node) => (IsNode.solid(node) ? Infinity : 0),
+  [PassableNodes.PassDoors]: (node: Node) => {
+    if (!IsNode.solid(node)) return 0;
+    return isPassableDoor(node) ? 1 : Infinity;
+  },
+  [PassableNodes.BreakBuildings]: (node: Node) => {
+    if (IsNode.breakableBuilding(node)) return randomInt(20, 40);
+    return IsNode.solid(node) ? Infinity : 0;
+  },
+};
+
+function isPassableDoor(node: Node) {
+  const def = getNodeDef(node.name);
+  if (!def) return false;
+  return BlockTag.get(def, BlockTag.PassableDoor) === BlockTag.PassableDoorTrue;
+}
 
 function create({
   passableNodes = PassableNodes.Default,
@@ -47,14 +74,12 @@ function create({
     fall: Animation;
   };
 }): Locomotion {
-  const { passableNodeCost, solidNodeCost } = Locomotion;
-  const nodeCost = Locomotion.nodeCostImpl[passableNodes];
-
+  const { passableNodeCost } = Locomotion;
+  const nodePassCost = nodePassCostImpl[passableNodes];
   const climbCost = 1 + Math.ceil(6 / climbSpeed);
 
-  const moveCost = (position: Vector3D, fromOrTo?: Vector3D): number => {
-    const node = minetest.get_node(position);
-    const cost = nodeCost(node);
+  const nodeCost = (position: Vector3D): number => {
+    const cost = nodePassCost(minetest.get_node(position));
 
     if (!passableNodeCost(cost)) return Infinity;
 
@@ -65,47 +90,67 @@ function create({
     });
 
     // can't walk on non-solid block
-    if (!solidNodeCost(nodeCost(under))) return Infinity;
+    if (!IsNode.solid(under)) return Infinity;
 
     // can't walk on non-supporting block
     if (getNodeSupport(under) !== BlockTag.PhysicsSupportAll) return Infinity;
 
-    if (!fromOrTo) return cost;
+    return cost;
+  };
 
-    const delta = vector.subtract(position, fromOrTo);
-    const distH = Math.abs(delta.x) + Math.abs(delta.z);
+  const moveCost = (
+    from: Vector3D,
+    to: Vector3D,
+    reversible = false
+  ): number => {
+    const delta = vector.subtract(to, from);
+    const absDeltaX = Math.abs(delta.x);
+    const absDeltaZ = Math.abs(delta.z);
+    // allow diagonals
+    if (absDeltaX > 1 || absDeltaZ > 1) return Infinity;
 
-    if (Math.abs(delta.x) > 1 || Math.abs(delta.z) > 1) return Infinity;
-    if (distH > 1 && delta.y !== 0) return Infinity;
-    if (delta.y < -1 || delta.y > 1) return Infinity;
+    const deltaY = reversible ? Math.abs(delta.y) : delta.y;
+    if (deltaY > 1) return Infinity;
 
-    if (delta.y !== 0) {
+    const distH = absDeltaX + absDeltaZ;
+    if (distH > 1 && deltaY !== 0) return Infinity;
+
+    if (deltaY !== 0) {
       if (delta.x === 0 && delta.z === 0) return Infinity;
+      const climb = reversible || delta.y > 0;
 
-      const lower = fromOrTo.y < position.y ? fromOrTo : position;
-      const higher = fromOrTo.y < position.y ? position : fromOrTo;
+      const lower = from.y < to.y ? from : to;
+      const higher = from.y < to.y ? to : from;
 
-      // check top has space for climbing on
-      const top = minetest.get_node(higher);
-      if (solidNodeCost(nodeCost(top))) return Infinity;
+      if (climb) {
+        // check top has space for climbing on
+        const top = minetest.get_node(higher);
+        if (IsNode.solid(top)) return Infinity;
+      }
 
       for (let y = lower.y; y < higher.y; y++) {
-        // check space for climbing
+        if (climb) {
+          // check wall for climbing
+          const wallPos = minetest.get_node({
+            x: higher.x,
+            y,
+            z: higher.z,
+          });
+          if (!IsNode.solid(wallPos)) return Infinity;
+        }
+
+        // check space for ascending/descending
         const climbPath = minetest.get_node({
           x: lower.x,
           y: y + 1,
           z: lower.z,
         });
-        if (solidNodeCost(nodeCost(climbPath))) return Infinity;
+        if (IsNode.solid(climbPath)) return Infinity;
       }
     }
 
-    let costV = 0;
-    if (delta.y !== 0) {
-      costV = climbCost;
-    }
-
-    return cost + distH + costV;
+    const costV = deltaY > 0 ? deltaY * climbCost : deltaY;
+    return distH + costV;
   };
 
   const normalizePathSource = (position: Vector3D): Vector3D => {
@@ -116,7 +161,7 @@ function create({
         z: position.z,
       };
       const belowNode = minetest.get_node(below);
-      if (solidNodeCost(nodeCost(belowNode))) {
+      if (IsNode.solid(belowNode)) {
         return {
           x: below.x,
           y: below.y + 1,
@@ -125,6 +170,37 @@ function create({
       }
     }
     return position;
+  };
+
+  const advancePath = (path: Path) => {
+    path.advance();
+
+    // check if we can cut corners by going diagonal
+    const cur = path.getStep(-1);
+    const next = path.getStep();
+    const next2 = path.getStep(+1);
+    if (cur && next && next2) {
+      if (
+        cur.y === next2.y &&
+        next.y === next2.y &&
+        Math.abs(next2.x - cur.x) === 1 &&
+        Math.abs(next2.z - cur.z) === 1
+      ) {
+        const costX = nodeCost({
+          x: next2.x,
+          y: next2.y,
+          z: cur.z,
+        });
+        const costZ = nodeCost({
+          x: cur.x,
+          y: next2.y,
+          z: next2.z,
+        });
+        if (costX <= 0 && costZ <= 0) {
+          path.advance();
+        }
+      }
+    }
   };
 
   const followPath = (entity: Entity, path: Path): ActionResult => {
@@ -152,7 +228,7 @@ function create({
 
     if (reachedHorizontally && reachedVertically) {
       if (path.hasNext()) {
-        path.advance();
+        advancePath(path);
         return ActionResult.Ongoing;
       } else {
         entity.targetLocation = undefined;
@@ -162,8 +238,8 @@ function create({
       const pos = normalizePathSource(entity.getVoxelPosition());
       if (
         equalVectors(pos, next) ||
-        entity.locomotion.moveCost(pos) === Infinity ||
-        entity.locomotion.moveCost(next, pos) < Infinity
+        passableNodeCost(nodeCost(pos)) ||
+        moveCost(pos, next) < Infinity
       ) {
         entity.targetLocation = next;
         return ActionResult.Ongoing;
@@ -257,7 +333,7 @@ function create({
           z: obstacleNodePos.z,
         };
         climbCollision =
-          moveCost(obstacleTopPos, vector.round(entityPos)) < Infinity
+          moveCost(vector.round(entityPos), obstacleTopPos) < Infinity
             ? forwardCollision
             : undefined;
       }
@@ -297,6 +373,7 @@ function create({
     pathfinderID: 'walkClimb' + PassableNodes[passableNodes],
     adjacentNodes,
     normalizePathSource,
+    nodeCost,
     moveCost,
     followPath,
     update,

@@ -2,7 +2,6 @@ import { tex } from 'resource_id';
 import { Animation } from 'server/entity/animation';
 import { EnemyEntityProperties } from 'server/entity/enemy_entity/enemy_entity';
 import { Faction } from 'server/entity/faction';
-import { PassableNodes } from 'server/entity/locomotion/locomotion';
 import { WalkClimbLocomotion } from 'server/entity/locomotion/walk_climb';
 import { defaultCollisionBox, PersistentEntity } from 'server/entity/entity';
 
@@ -70,14 +69,14 @@ export class BeetleProperties extends EnemyEntityProperties {
   animations = this.carryingAnimations;
 
   carryingLocomotion = WalkClimbLocomotion.create({
-    passableNodes: PassableNodes.BreakBuildings,
+    passableNodes: WalkClimbLocomotion.PassableNodes.BreakBuildings,
     walkSpeed: 0.8,
     climbSpeed: 0.1,
     animationMap: this.carryingAnimations,
   });
 
   unburdenedLocomotion = WalkClimbLocomotion.create({
-    passableNodes: PassableNodes.BreakBuildings,
+    passableNodes: WalkClimbLocomotion.PassableNodes.BreakBuildings,
     walkSpeed: 1.5,
     climbSpeed: 0.8,
     animationMap: this.unburdenedAnimations,

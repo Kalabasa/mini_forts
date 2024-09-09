@@ -11,6 +11,7 @@ function create(): Locomotion {
     pathfinderID: '',
     adjacentNodes: [],
     normalizePathSource: (position) => position,
+    nodeCost: () => 0,
     moveCost: () => 0,
     followPath: () => ActionResult.Impossible,
     update: (): void => {},
