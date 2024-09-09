@@ -15,7 +15,6 @@ import {
 } from 'server/entity/enemy_entity/enemy_entity';
 import { EntityDefinition } from 'server/entity/entity';
 import { Faction } from 'server/entity/faction';
-import { Locomotion } from 'server/entity/locomotion/locomotion';
 import { MinionDef } from 'server/entity/minion/def';
 import { MinionScript } from 'server/entity/minion/script';
 import { SlugDef } from 'server/entity/slug/def';
