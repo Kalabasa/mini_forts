@@ -42,6 +42,8 @@ const logger = createLogger('Director');
 
 // Gameplay logic
 export class Director {
+  private coreReachable = true;
+
   private enemiesDisabled = false;
   private enemyBases: Vector3D[] = [];
   private readonly enemies = new Map<ID, EnemyEntity>();
@@ -49,6 +51,7 @@ export class Director {
   private gameTime = 0;
 
   private eventTimer = new IntervalTimer(10);
+  private reachableTimer = new IntervalTimer(33);
 
   constructor(
     private readonly game: Game,
@@ -60,6 +63,7 @@ export class Director {
   reset(): void {
     logger.trace('Resetting...');
     this.eventTimer.reset();
+    this.reachableTimer.reset();
     this.enemyBases = [];
     this.enemies.clear();
     this.maxEnemies = initialMaxEnemies;
@@ -70,7 +74,7 @@ export class Director {
     this.game.setResources(startingResources);
 
     const homePos = this.game.getHomePosition();
-    const homeUnderPos = vector.add(homePos, { x: 0, y: -1, z: 0 });
+    const homeUnderPos = vector.offset(homePos, 0, -1, 0);
 
     this.game.setBlock(CoreCrystalDef, homePos);
     this.game.setBlock(CoreCrystalBaseDef, homeUnderPos);
@@ -118,6 +122,13 @@ export class Director {
         this.trySpawnEnemy();
       }
     }
+
+    if (this.reachableTimer.updateAndCheck(dt)) {
+      this.coreReachable = this.calculateCoreReachable();
+      if (!this.coreReachable) {
+        logger.info('Core is not reachable!');
+      }
+    }
   }
 
   calculateResourceHarvestingPriority(type: ResourceType): TaskPriority {
@@ -161,6 +172,27 @@ export class Director {
     }
   }
 
+  private calculateCoreReachable() {
+    const homePos = this.game.getHomePosition();
+    const pathfinder = Pathfinder.get(this.game, SlugDef.properties.locomotion);
+    for (const basePos of this.enemyBases) {
+      for (let x = -1; x <= 1; x++) {
+        for (let z = -1; z <= 1; z++) {
+          if (
+            x !== 0 &&
+            z !== 0 &&
+            pathfinder
+              .findPath(vector.offset(basePos, x, 0, z), homePos)
+              .exists()
+          ) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
   // shouldn't this be a function in DenScript?
   spawnMinion(denPosition: Vector3D): MinionScript | undefined {
     if (!this.game.hasResource(MinionDef.properties.spawnRequirement)) {
@@ -202,8 +234,8 @@ export class Director {
     for (let x = -1; x <= 1; x++) {
       for (let z = -1; z <= 1; z++) {
         if (x !== 0 && z !== 0) {
-          const pos = vector.add(basePos, { x, y: 0, z });
-          const under = vector.add(basePos, { x, y: -1, z });
+          const pos = vector.offset(basePos, x, 0, z);
+          const under = vector.offset(basePos, x, -1, z);
           if (
             !IsNode.solid(minetest.get_node(pos)) &&
             IsNode.solid(minetest.get_node(under))
@@ -269,12 +301,12 @@ export class Director {
     logger.trace('Spawning enemy base...', baseSpawnPos);
     this.enemyBases.push(baseSpawnPos);
 
-    const baseUnderPos = vector.add(baseSpawnPos, { x: 0, y: -1, z: 0 });
+    const baseUnderPos = vector.offset(baseSpawnPos, 0, -1, 0);
 
     for (let x = -1; x <= 1; x++) {
       for (let y = 0; y <= 1; y++) {
         for (let z = -1; z <= 1; z++) {
-          minetest.remove_node(vector.add(baseSpawnPos, { x, y, z }));
+          minetest.remove_node(vector.offset(baseSpawnPos, x, y, z));
         }
       }
     }
@@ -290,7 +322,6 @@ export class Director {
     }
   }
 
-  // todo: delegate spawn base positioning to Stage implementation
   private findEnemyBaseSpawnPos(): Vector3D | undefined {
     const homePos = this.game.getHomePosition();
     const bounds = this.game.getStageBounds();
