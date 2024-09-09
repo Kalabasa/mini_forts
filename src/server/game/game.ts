@@ -157,7 +157,7 @@ export class Game implements GameContext {
   }
 
   getSpawnPosition(): Vector3D {
-    return vector.add(this.getHomePosition(), { x: 0, y: 1, z: 0 });
+    return vector.offset(this.getHomePosition(), 0, 1, 0);
   }
 
   load(data: GameData) {
